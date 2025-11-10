@@ -64,3 +64,19 @@ uv build
 ## 出力形式
 - CSV形式でのデータエクスポート
 - 出力ディレクトリ: `data/` または `output/` (gitignore対象)
+
+## Conventional Commits スコープ
+コミットメッセージのスコープには以下を使用する必要がある (SHOULD):
+
+### コアコンポーネント
+- `cli`: CLIインターフェース関連 (`cli.py`)
+- `controller`: メインコントローラーロジック (`controller.py`)
+- `authenticator`: 認証機能 (`authenticator.py`)
+- `fetcher`: データ取得機能 (`fetcher.py`)
+- `exporter`: データエクスポート機能 (`exporter.py`)
+
+### サポートコンポーネント
+- `config`: 設定管理 (`config.py`)
+- `models`: データモデル定義 (`models.py`)
+- `exceptions`: カスタム例外定義 (`exceptions.py`)
+- `logger`: ログ設定 (`logger.py`)
