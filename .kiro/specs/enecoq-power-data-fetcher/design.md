@@ -167,7 +167,6 @@ class EnecoQDataFetcher:
 **責務**:
 - JSON形式への変換
 - コンソール表示
-- メタデータの付与
 
 **インターフェース**:
 ```python
@@ -225,7 +224,6 @@ class PowerData:
     usage: PowerUsage
     cost: PowerCost
     co2: CO2Emission
-    metadata: dict  # Additional metadata
     
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""

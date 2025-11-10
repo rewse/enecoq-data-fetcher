@@ -70,5 +70,5 @@
 3. THE Tool SHALL データをコンソールに表示する機能を提供する
 4. WHERE User が形式を指定する, THE Tool SHALL 指定された形式でデータを出力する
 5. WHEN JSON 形式で出力する, THE Tool SHALL 数値データを単位なしの数字のみで出力する
-6. THE Tool SHALL エクスポートされたデータに取得日時のメタデータを含める
+6. THE Tool SHALL エクスポートされたデータに取得日時を含める
 7. THE Tool SHALL 文字エンコーディングを UTF-8 で統一する
