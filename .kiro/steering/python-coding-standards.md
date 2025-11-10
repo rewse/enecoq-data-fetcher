@@ -1,6 +1,5 @@
 ---
-inclusion: fileMatch
-fileMatchPattern: ['**/*.py', '**/*.pyi']
+inclusion: always
 ---
 
 # Python コーディング標準
