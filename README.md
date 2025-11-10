@@ -173,14 +173,14 @@ enecoq-fetch --email your@email.com --password yourpassword --config config.yaml
 
 ### cronでの定期実行
 
-毎時42分にデータを取得してファイルに保存する例（負荷分散のため0〜30秒のランダム待機）：
+毎時42分にデータを取得してファイルに保存する例（負荷分散のため0〜60秒のランダム待機）：
 
 ```bash
 # crontabを編集
 crontab -e
 
 # 以下を追加
-42 * * * * sleep $((RANDOM \% 30)) && /path/to/.venv/bin/enecoq-fetch --email your@email.com --password yourpassword --output /path/to/data/power_data.json
+42 * * * * sleep $((RANDOM \% 60)) && /path/to/.venv/bin/enecoq-fetch --email your@email.com --password yourpassword --output /path/to/data/power_data.json
 ```
 
 注: 負荷分散のため、42を別の数字（59以下の任意の値）に変更することを推奨します。多くのユーザーが同じ時刻にアクセスするとサーバーに負荷がかかるため、0以外のランダムな時刻を選択してください。
@@ -255,20 +255,6 @@ utility_meter:
 - `sensor.enecoq_co2_emission_hourly`: 1時間あたりのCO2排出量（kg）
 
 ## 開発
-
-### 開発環境のセットアップ
-
-```bash
-# 仮想環境の作成と有効化
-uv venv
-source .venv/bin/activate  # macOS/Linux
-
-# 依存関係のインストール（推奨: ロックファイルから同期）
-uv sync
-
-# Playwrightブラウザのインストール
-playwright install
-```
 
 ### テストの実行
 
