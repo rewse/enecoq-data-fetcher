@@ -6,6 +6,7 @@ from typing import Optional
 from playwright.sync_api import sync_playwright, Browser, BrowserContext, Page
 
 from enecoq_data_fetcher import authenticator
+from enecoq_data_fetcher import config as config_module
 from enecoq_data_fetcher import exceptions
 from enecoq_data_fetcher import exporter
 from enecoq_data_fetcher import fetcher
@@ -35,7 +36,8 @@ class EnecoQController:
         self,
         email: str,
         password: str,
-        max_retries: int = DEFAULT_MAX_RETRIES,
+        config: Optional[config_module.Config] = None,
+        max_retries: Optional[int] = None,
         backoff_factor: int = DEFAULT_BACKOFF_FACTOR,
     ) -> None:
         """Initialize controller with credentials.
@@ -43,14 +45,18 @@ class EnecoQController:
         Args:
             email: User's email for enecoQ authentication.
             password: User's password for enecoQ authentication.
-            max_retries: Maximum number of retry attempts (default: 3).
+            config: Optional Config object with settings.
+            max_retries: Maximum number of retry attempts (overrides config).
             backoff_factor: Exponential backoff factor (default: 2).
         """
         self._email = email
         self._password = password
-        self._max_retries = max_retries
+        self._config = config or config_module.Config()
+        self._max_retries = max_retries or self._config.max_retries
         self._backoff_factor = backoff_factor
-        self._authenticator = authenticator.EnecoQAuthenticator(email, password)
+        self._authenticator = authenticator.EnecoQAuthenticator(
+            email, password, user_agent=self._config.user_agent
+        )
         self._log = logger.get_logger()
 
     def fetch_power_data(
@@ -122,7 +128,8 @@ class EnecoQController:
             try:
                 # Create browser context with timeout
                 context = browser.new_context()
-                context.set_default_timeout(self.DEFAULT_TIMEOUT)
+                timeout_ms = self._config.timeout * 1000  # Convert seconds to milliseconds
+                context.set_default_timeout(timeout_ms)
                 
                 try:
                     # Create new page

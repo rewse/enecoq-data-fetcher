@@ -1,10 +1,12 @@
 """Command-line interface for enecoQ data fetcher."""
 
+import os
 import sys
 from typing import Optional
 
 import click
 
+from enecoq_data_fetcher import config as config_module
 from enecoq_data_fetcher import controller
 from enecoq_data_fetcher import exceptions
 from enecoq_data_fetcher import logger
@@ -90,13 +92,20 @@ def main(
         # Validate arguments
         _validate_arguments(email, password, period, output_format, output_path)
 
+        # Load configuration
+        config = config_module.Config.load(
+            config_path=config_path if config_path != "config.yaml" or os.path.exists(config_path) else None,
+            log_level=log_level.upper(),
+        )
+
         # Configure logging
-        log = logger.setup_logger(log_level=log_level.upper())
+        log = logger.setup_logger(log_level=config.log_level, log_file=config.log_file)
         log.info("Starting enecoQ data fetcher")
         log.debug(f"Parameters - Period: {period}, Format: {output_format}, Config: {config_path}")
+        log.debug(f"Configuration - Log level: {config.log_level}, Timeout: {config.timeout}, Max retries: {config.max_retries}")
 
-        # Create controller
-        enecoq_controller = controller.EnecoQController(email, password)
+        # Create controller with config
+        enecoq_controller = controller.EnecoQController(email, password, config=config)
 
         # Fetch power data
         power_data = enecoq_controller.fetch_power_data(

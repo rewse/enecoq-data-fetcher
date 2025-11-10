@@ -1,0 +1,13 @@
+# enecoQ Data Fetcher Configuration File
+# Copy this file to config.yaml and customize as needed
+
+# Logging configuration
+log_level: INFO  # Options: DEBUG, INFO, WARNING, ERROR
+log_file: logs/enecoq.log
+
+# Network configuration
+timeout: 30  # Request timeout in seconds
+max_retries: 3  # Maximum number of retry attempts
+
+# Browser configuration
+user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15"

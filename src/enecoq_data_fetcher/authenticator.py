@@ -22,15 +22,17 @@ class EnecoQAuthenticator:
     LOGGED_IN_INDICATOR = 'a:has-text("ログアウト")'
     ERROR_MESSAGE_SELECTOR = '.error, .alert, [class*="error"]'
 
-    def __init__(self, email: str, password: str):
+    def __init__(self, email: str, password: str, user_agent: str = None):
         """Initialize authenticator with credentials.
         
         Args:
             email: User's email address for enecoQ login.
             password: User's password for enecoQ login.
+            user_agent: Optional user agent string for HTTP requests.
         """
         self._email = email
         self._password = password
+        self._user_agent = user_agent
         self._log = logger.get_logger()
 
     def login(self, page: Page) -> None:
