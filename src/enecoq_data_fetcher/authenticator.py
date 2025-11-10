@@ -3,6 +3,7 @@
 from playwright.sync_api import Page
 
 from enecoq_data_fetcher import exceptions
+from enecoq_data_fetcher import logger
 
 
 class EnecoQAuthenticator:
@@ -30,6 +31,7 @@ class EnecoQAuthenticator:
         """
         self._email = email
         self._password = password
+        self._log = logger.get_logger()
 
     def login(self, page: Page) -> None:
         """Authenticate with enecoQ web service.
@@ -47,25 +49,32 @@ class EnecoQAuthenticator:
         """
         try:
             # Navigate to login page
+            self._log.debug(f"Navigating to login page: {self.LOGIN_URL}")
             page.goto(self.LOGIN_URL, wait_until="networkidle")
             
             # Fill in email
+            self._log.debug("Locating email input field")
             email_input = page.locator(self.EMAIL_SELECTOR)
             if not email_input.is_visible():
+                self._log.error("Login form not found on page")
                 raise exceptions.AuthenticationError(
                     "Login form not found on page"
                 )
+            self._log.debug("Filling email field")
             email_input.fill(self._email)
             
-            # Fill in password
+            # Fill in password (DO NOT log password value)
+            self._log.debug("Filling password field")
             password_input = page.locator(self.PASSWORD_SELECTOR)
             password_input.fill(self._password)
             
             # Submit the form
+            self._log.debug("Submitting login form")
             submit_button = page.locator(self.SUBMIT_SELECTOR)
             submit_button.click()
             
             # Wait for navigation after login
+            self._log.debug("Waiting for page load after login")
             page.wait_for_load_state("networkidle")
             
             # Check if login was successful
@@ -78,13 +87,17 @@ class EnecoQAuthenticator:
                     if error_text:
                         error_msg = f"Authentication failed: {error_text.strip()}"
                 
+                self._log.error(error_msg)
                 raise exceptions.AuthenticationError(error_msg)
+            
+            self._log.info("Login successful")
                 
         except exceptions.AuthenticationError:
             # Re-raise authentication errors as-is
             raise
         except Exception as e:
             # Wrap other exceptions in AuthenticationError
+            self._log.error(f"Login failed due to unexpected error: {str(e)}", exc_info=True)
             raise exceptions.AuthenticationError(
                 f"Login failed due to unexpected error: {str(e)}"
             ) from e
@@ -104,7 +117,10 @@ class EnecoQAuthenticator:
         try:
             # Check for logout link which indicates successful login
             logout_link = page.locator(self.LOGGED_IN_INDICATOR)
-            return logout_link.count() > 0
-        except Exception:
+            is_logged_in = logout_link.count() > 0
+            self._log.debug(f"Login status check: {is_logged_in}")
+            return is_logged_in
+        except Exception as e:
             # If any error occurs during check, assume not logged in
+            self._log.debug(f"Login status check failed: {e}")
             return False

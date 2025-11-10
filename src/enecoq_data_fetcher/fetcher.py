@@ -6,6 +6,7 @@ from datetime import datetime
 from playwright.sync_api import Page
 
 from enecoq_data_fetcher import exceptions
+from enecoq_data_fetcher import logger
 from enecoq_data_fetcher import models
 
 
@@ -27,6 +28,7 @@ class EnecoQDataFetcher:
             page: Playwright page object for browser interaction.
         """
         self.page = page
+        self._log = logger.get_logger()
 
     def fetch_today_data(self) -> models.PowerData:
         """Fetch and parse today's power data.
@@ -41,8 +43,10 @@ class EnecoQDataFetcher:
             FetchError: If data retrieval or parsing fails.
         """
         try:
+            self._log.info("Fetching today's data")
             return self._fetch_data_for_period("today")
         except Exception as e:
+            self._log.error(f"Failed to fetch today's data: {str(e)}", exc_info=True)
             raise exceptions.FetchError(
                 f"Failed to fetch today's data: {str(e)}", "FETCH_TODAY_ERROR"
             ) from e
@@ -60,8 +64,10 @@ class EnecoQDataFetcher:
             FetchError: If data retrieval or parsing fails.
         """
         try:
+            self._log.info("Fetching month's data")
             return self._fetch_data_for_period("month")
         except Exception as e:
+            self._log.error(f"Failed to fetch month's data: {str(e)}", exc_info=True)
             raise exceptions.FetchError(
                 f"Failed to fetch month's data: {str(e)}", "FETCH_MONTH_ERROR"
             ) from e
@@ -79,24 +85,37 @@ class EnecoQDataFetcher:
             FetchError: If data retrieval or parsing fails.
         """
         # Select period from dropdown
+        self._log.debug(f"Selecting period: {period}")
         self._select_period(period)
 
         # Wait for page to load data
+        self._log.debug("Waiting for page to load data")
         self.page.wait_for_load_state("networkidle")
 
         # Extract data from page
+        self._log.debug("Extracting power usage data")
         usage_value = self._extract_power_usage()
+        self._log.debug(f"Power usage: {usage_value} kWh")
+        
+        self._log.debug("Extracting power cost data")
         cost_value = self._extract_power_cost()
+        self._log.debug(f"Power cost: {cost_value} JPY")
+        
+        self._log.debug("Extracting CO2 emission data")
         co2_value = self._extract_co2_emission()
+        self._log.debug(f"CO2 emission: {co2_value} kg")
 
         # Create and return PowerData object
-        return models.PowerData(
+        power_data = models.PowerData(
             period=period,
             timestamp=datetime.now(),
             usage=models.PowerUsage(value=usage_value),
             cost=models.PowerCost(value=cost_value),
             co2=models.CO2Emission(value=co2_value),
         )
+        
+        self._log.info(f"Successfully fetched {period} data")
+        return power_data
 
     def _select_period(self, period: str) -> None:
         """Select period from dropdown.
@@ -113,15 +132,19 @@ class EnecoQDataFetcher:
             
             if period == "today":
                 # Select today option (value="daily")
+                self._log.debug("Selecting 'daily' option from dropdown")
                 self.page.select_option(selector, value="daily")
             elif period == "month":
                 # Select month option (value="monthly")
+                self._log.debug("Selecting 'monthly' option from dropdown")
                 self.page.select_option(selector, value="monthly")
             else:
+                self._log.error(f"Invalid period: {period}")
                 raise exceptions.FetchError(
                     f"Invalid period: {period}", "INVALID_PERIOD"
                 )
         except Exception as e:
+            self._log.error(f"Failed to select period: {str(e)}", exc_info=True)
             raise exceptions.FetchError(
                 f"Failed to select period: {str(e)}", "PERIOD_SELECT_ERROR"
             ) from e
@@ -141,11 +164,13 @@ class EnecoQDataFetcher:
 
             # Check if element exists
             if locator.count() == 0:
+                self._log.warning("Power usage element not found")
                 return 0.0
 
             # Get text content
             text = locator.first.text_content()
             if not text:
+                self._log.warning("Power usage text is empty")
                 return 0.0
 
             # Extract numeric value using regex (e.g., "14.50kWh" -> 14.50)
@@ -153,9 +178,11 @@ class EnecoQDataFetcher:
             if match:
                 return float(match.group(1))
 
+            self._log.warning(f"Could not extract numeric value from: {text}")
             return 0.0
-        except Exception:
+        except Exception as e:
             # Return empty value if extraction fails
+            self._log.warning(f"Power usage extraction failed: {e}")
             return 0.0
 
     def _extract_power_cost(self) -> float:
@@ -173,11 +200,13 @@ class EnecoQDataFetcher:
 
             # Check if element exists
             if locator.count() == 0:
+                self._log.warning("Power cost element not found")
                 return 0.0
 
             # Get text content
             text = locator.first.text_content()
             if not text:
+                self._log.warning("Power cost text is empty")
                 return 0.0
 
             # Extract numeric value using regex (e.g., "542.02円" -> 542.02)
@@ -185,9 +214,11 @@ class EnecoQDataFetcher:
             if match:
                 return float(match.group(1))
 
+            self._log.warning(f"Could not extract numeric value from: {text}")
             return 0.0
-        except Exception:
+        except Exception as e:
             # Return empty value if extraction fails
+            self._log.warning(f"Power cost extraction failed: {e}")
             return 0.0
 
     def _extract_co2_emission(self) -> float:
@@ -205,11 +236,13 @@ class EnecoQDataFetcher:
 
             # Check if element exists
             if locator.count() == 0:
+                self._log.warning("CO2 emission element not found")
                 return 0.0
 
             # Get text content
             text = locator.first.text_content()
             if not text:
+                self._log.warning("CO2 emission text is empty")
                 return 0.0
 
             # Extract numeric value using regex (e.g., "6.53kg" -> 6.53)
@@ -217,7 +250,9 @@ class EnecoQDataFetcher:
             if match:
                 return float(match.group(1))
 
+            self._log.warning(f"Could not extract numeric value from: {text}")
             return 0.0
-        except Exception:
+        except Exception as e:
             # Return empty value if extraction fails
+            self._log.warning(f"CO2 emission extraction failed: {e}")
             return 0.0

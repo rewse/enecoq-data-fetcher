@@ -7,6 +7,7 @@ import click
 
 from enecoq_data_fetcher import controller
 from enecoq_data_fetcher import exceptions
+from enecoq_data_fetcher import logger
 
 
 @click.command()
@@ -77,8 +78,10 @@ def main(
         # Validate arguments
         _validate_arguments(email, password, period, output_format, output_path)
 
-        # TODO: Configure logging based on log_level
-        # This will be implemented in task 9
+        # Configure logging
+        log = logger.setup_logger(log_level=log_level.upper())
+        log.info("Starting enecoQ data fetcher")
+        log.debug(f"Parameters - Period: {period}, Format: {output_format}")
 
         # Create controller
         enecoq_controller = controller.EnecoQController(email, password)
@@ -94,31 +97,46 @@ def main(
         if output_format.lower() == "json":
             if output_path:
                 click.echo(f"Data successfully exported to: {output_path}")
+                log.info(f"Data successfully exported to: {output_path}")
             else:
                 # Data was already printed by exporter
-                pass
+                log.info("Data successfully exported to console")
+        
+        log.info("enecoQ data fetcher completed successfully")
 
     except click.BadParameter as e:
+        log = logger.get_logger()
+        log.error(f"Invalid argument: {e.message}")
         click.echo(f"Invalid argument: {e.message}", err=True)
         sys.exit(6)
 
     except exceptions.AuthenticationError as e:
+        log = logger.get_logger()
+        log.error(f"Authentication error: {e}")
         click.echo(f"Authentication error: {e}", err=True)
         sys.exit(1)
 
     except exceptions.FetchError as e:
+        log = logger.get_logger()
+        log.error(f"Fetch error: {e}")
         click.echo(f"Fetch error: {e}", err=True)
         sys.exit(2)
 
     except exceptions.ExportError as e:
+        log = logger.get_logger()
+        log.error(f"Export error: {e}")
         click.echo(f"Export error: {e}", err=True)
         sys.exit(3)
 
     except exceptions.EnecoQError as e:
+        log = logger.get_logger()
+        log.error(f"Error: {e}")
         click.echo(f"Error: {e}", err=True)
         sys.exit(4)
 
     except Exception as e:
+        log = logger.get_logger()
+        log.error(f"Unexpected error: {e}", exc_info=True)
         click.echo(f"Unexpected error: {e}", err=True)
         sys.exit(5)
 
