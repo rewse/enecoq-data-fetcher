@@ -47,7 +47,7 @@
   - 文字エンコーディングをUTF-8で統一する
   - _要件: 4.2, 4.3, 4.6, 4.7_
 
-- [ ] 7. Main Controllerの実装
+- [x] 7. Main Controllerの実装
   - EnecoQControllerクラスを作成する
   - Playwrightのブラウザを起動する
   - Authenticatorを使用して認証を実行する
