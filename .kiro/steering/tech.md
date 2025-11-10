@@ -13,6 +13,7 @@ inclusion: always
 ## ビルドシステム
 - ビルドバックエンド: Hatchling
 - パッケージマネージャー: uv (推奨)
+- 依存関係管理: `uv.lock` によるロックファイルベース
 
 ## 主要な依存関係
 - **Playwright** (>=1.40.0): Webスクレイピング・ブラウザ自動化
@@ -42,7 +43,7 @@ uv venv
 source .venv/bin/activate  # macOS/Linux
 
 # 依存関係のインストール
-uv pip install -e .
+uv sync
 
 # Playwrightブラウザのインストール
 playwright install
@@ -50,8 +51,8 @@ playwright install
 
 ### 開発
 ```bash
-# パッケージのインストール（開発モード）
-uv pip install -e .
+# パッケージのインストール
+uv sync
 
 # CLIの実行
 enecoq-fetch --help

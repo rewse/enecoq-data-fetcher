@@ -55,7 +55,7 @@ source .venv/bin/activate  # macOS/Linux
 .venv\Scripts\activate     # Windows
 
 # 依存関係のインストール
-uv pip install -e .
+uv sync
 
 # Playwrightブラウザのインストール
 playwright install
@@ -255,6 +255,20 @@ utility_meter:
 - `sensor.enecoq_co2_emission_hourly`: 1時間あたりのCO2排出量（kg）
 
 ## 開発
+
+### 開発環境のセットアップ
+
+```bash
+# 仮想環境の作成と有効化
+uv venv
+source .venv/bin/activate  # macOS/Linux
+
+# 依存関係のインストール（推奨: ロックファイルから同期）
+uv sync
+
+# Playwrightブラウザのインストール
+playwright install
+```
 
 ### テストの実行
 
