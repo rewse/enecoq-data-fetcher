@@ -57,7 +57,7 @@
   - リトライロジックを実装する（最大3回、指数バックオフ）
   - _要件: 1.2, 1.3, 1.4, 1.6, 3.1, 3.2, 3.3_
 
-- [ ] 8. CLI Interfaceの実装
+- [x] 8. CLI Interfaceの実装
   - Clickを使用してCLIを作成する
   - コマンドライン引数を定義する（--email、--password、--period、--format、--log-level）
   - 引数のバリデーションを実装する
