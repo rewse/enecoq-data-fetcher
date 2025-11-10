@@ -1,0 +1,20 @@
+[project]
+name = "enecoq-data-fetcher"
+version = "0.1.0"
+description = "enecoQ power data fetcher - Fetch power usage, cost, and CO2 emission data from enecoQ web service"
+readme = "README.md"
+authors = [
+    { name = "Shibata, Tats" }
+]
+requires-python = ">=3.9"
+dependencies = [
+    "playwright>=1.40.0",
+    "click>=8.1.0",
+]
+
+[project.scripts]
+enecoq-fetch = "enecoq_data_fetcher.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
