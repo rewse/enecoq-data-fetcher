@@ -27,7 +27,7 @@
   - is_logged_in()メソッドを実装し、ログイン状態を確認する
   - _要件: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 5. Data Fetcherコンポーネントの実装
+- [x] 5. Data Fetcherコンポーネントの実装
   - EnecoQDataFetcherクラスを作成する
   - fetch_today_data()メソッドを実装し、今日の電力データを取得・パースする
   - fetch_month_data()メソッドを実装し、今月の電力データを取得・パースする

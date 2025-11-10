@@ -56,6 +56,11 @@ uv build
 - 型チェック: 型アノテーションを使用する必要がある (SHOULD)
 - コーディング標準: Google Python Style Guide に従わなければならない (MUST)
 
+## Playwright 開発ガイドライン
+- Web スクレイピングのセレクターを実装する前に、実際の HTML 構造を Playwright MCP で確認しなければならない (MUST)
+- CSS セレクターや要素の ID は実際のページから取得した正確な値を使用しなければならない (MUST)
+- ログインが必要な場合は Authentication Credentials をチャットで尋ねなければならない (MUST)
+
 ## 出力形式
 - CSV形式でのデータエクスポート
 - 出力ディレクトリ: `data/` または `output/` (gitignore対象)
