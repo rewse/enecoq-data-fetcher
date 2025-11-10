@@ -1,6 +1,6 @@
 [project]
 name = "enecoq-data-fetcher"
-version = "0.1.0"
+dynamic = ["version"]
 description = "enecoQ power data fetcher - Fetch power usage, cost, and CO2 emission data from enecoQ web service"
 readme = "README.md"
 authors = [
@@ -14,6 +14,9 @@ dependencies = [
 
 [project.scripts]
 enecoq-fetch = "enecoq_data_fetcher.cli:main"
+
+[tool.hatch.version]
+path = "src/enecoq_data_fetcher/__init__.py"
 
 [build-system]
 requires = ["hatchling"]

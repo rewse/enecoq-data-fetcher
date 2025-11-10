@@ -6,6 +6,7 @@ from typing import Optional
 
 import click
 
+from enecoq_data_fetcher import __version__
 from enecoq_data_fetcher import config as config_module
 from enecoq_data_fetcher import controller
 from enecoq_data_fetcher import exceptions
@@ -13,6 +14,7 @@ from enecoq_data_fetcher import logger
 
 
 @click.command()
+@click.version_option(version=__version__, prog_name="enecoq-fetch")
 @click.option(
     "--email",
     required=True,
