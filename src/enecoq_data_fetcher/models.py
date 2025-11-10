@@ -26,7 +26,7 @@ class PowerCost:
     """Power cost data in JPY."""
 
     value: float
-    unit: str = "円"
+    unit: str = "JPY"
 
     def to_dict(self) -> float:
         """Convert to numeric value for JSON serialization.

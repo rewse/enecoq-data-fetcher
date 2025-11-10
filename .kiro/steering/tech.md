@@ -52,9 +52,31 @@ enecoq-fetch --help
 uv build
 ```
 
+### テスト
+```bash
+# テストの実行（PYTHONPATH を設定して実行）
+PYTHONPATH=src python3 tests/test_exporter.py
+
+# 特定のテスト関数を実行
+PYTHONPATH=src python3 -c "from tests.test_exporter import test_export_json_string; test_export_json_string()"
+```
+
+## テストガイドライン
+- テストファイルは `tests/` ディレクトリに配置しなければならない (MUST)
+- テストファイル名は `test_*.py` の形式にする必要がある (SHOULD)
+- テスト実行時は `PYTHONPATH=src` を設定してパッケージをインポート可能にしなければならない (MUST)
+- テストファイルからのインポートは `from enecoq_data_fetcher import module_name` の形式を使用しなければならない (MUST)
+- 各テスト関数は独立して実行可能でなければならない (MUST)
+- テストファイルは `if __name__ == "__main__":` ブロックで全テストを実行できるようにする必要がある (SHOULD)
+
 ## 開発ツール
 - 型チェック: 型アノテーションを使用する必要がある (SHOULD)
 - コーディング標準: Google Python Style Guide に従わなければならない (MUST)
+
+## 出力ガイドライン
+- JSONやコンソールへの出力（`print()` や `sys.stdout` への出力）は文字化け防止のために常に英語で記述しなければならない (MUST)
+- データモデルの単位（`unit` 属性）も英語表記を使用しなければならない (MUST)
+  - 例: 「円」ではなく「JPY」を使用する
 
 ## Playwright 開発ガイドライン
 - Web スクレイピングのセレクターを実装する前に、実際の HTML 構造を Playwright MCP で確認しなければならない (MUST)
