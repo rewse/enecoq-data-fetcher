@@ -173,13 +173,27 @@ enecoq-fetch --email your@email.com --password yourpassword --config config.yaml
 
 ### テストの実行
 
-```bash
-# 全テストの実行
-PYTHONPATH=src python3 -m pytest tests/
+#### 全テストの実行
 
-# 特定のテストファイルの実行
-PYTHONPATH=src python3 tests/test_exporter.py
+```bash
+# テストスクリプトを使用（推奨）
+./tests/run_tests.sh
 ```
+
+#### 個別テストの実行
+
+```bash
+# 仮想環境を有効化
+source .venv/bin/activate
+
+# PYTHONPATHを設定
+export PYTHONPATH=src
+
+# 特定のテストファイルを実行
+python3 tests/test_exporter.py
+```
+
+詳細なテスト情報は [tests/README.md](tests/README.md) を参照してください。
 
 ### パッケージのビルド
 
