@@ -83,8 +83,11 @@ PYTHONPATH=src python3 -c "from tests.test_exporter import test_export_json_stri
 - CSS セレクターや要素の ID は実際のページから取得した正確な値を使用しなければならない (MUST)
 - ログインが必要な場合は Authentication Credentials をチャットで尋ねなければならない (MUST)
 
-## Conventional Commits スコープ
-コミットメッセージのスコープには以下を使用する必要がある (SHOULD):
+## Git コミットガイドライン
+- コミットメッセージには本文を付ける必要がある (SHOULD)
+- 本文には変更内容の詳細、理由、影響範囲などを記述する必要がある (SHOULD)
+- Conventional Commits 仕様に従わなければならない (MUST)
+- コミットメッセージのスコープには以下を使用する必要がある (SHOULD)
 
 ### コアコンポーネント
 - `cli`: CLIインターフェース関連 (`cli.py`)
