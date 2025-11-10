@@ -376,16 +376,14 @@ def retry(max_attempts=3, backoff_factor=2):
 
 ### 設定ファイル
 
-設定は `~/.enecoq/config.json` に保存します（オプション）。
+設定は `config.yaml` に保存します（オプション）。
 
-```json
-{
-  "log_level": "INFO",
-  "log_file": "~/.enecoq/logs/enecoq.log",
-  "timeout": 30,
-  "max_retries": 3,
-  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
-}
+```yaml
+log_level: INFO
+log_file: logs/enecoq.log
+timeout: 30
+max_retries: 3
+user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 ```
 
 ### コマンドライン引数
@@ -394,6 +392,7 @@ def retry(max_attempts=3, backoff_factor=2):
 - `--password`: enecoQのパスワード（必須）
 - `--period`: データ取得期間（"today" または "month"、デフォルト: "month"）
 - `--format`: 出力形式（"json" または "console"、デフォルト: "json"）
+- `--config`: 設定ファイルのパス（デフォルト: "config.yaml"）
 - `--log-level`: ログレベル（DEBUG, INFO, WARNING, ERROR、デフォルト: INFO）
 
 ## パフォーマンス考慮事項

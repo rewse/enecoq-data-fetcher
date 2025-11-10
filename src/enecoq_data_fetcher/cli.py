@@ -42,6 +42,13 @@ from enecoq_data_fetcher import logger
     help="Output file path for JSON format (optional).",
 )
 @click.option(
+    "--config",
+    "config_path",
+    type=click.Path(exists=False),
+    default="config.yaml",
+    help="Configuration file path (default: config.yaml).",
+)
+@click.option(
     "--log-level",
     type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False),
     default="INFO",
@@ -53,6 +60,7 @@ def main(
     period: str,
     output_format: str,
     output_path: Optional[str],
+    config_path: str,
     log_level: str,
 ) -> int:
     """enecoQ Data Fetcher - Fetch power usage data from enecoQ Web Service.
@@ -73,6 +81,10 @@ def main(
         \b
         # Fetch with debug logging
         $ enecoq-fetch --email user@example.com --password secret --log-level DEBUG
+
+        \b
+        # Use custom config file
+        $ enecoq-fetch --email user@example.com --password secret --config /path/to/config.yaml
     """
     try:
         # Validate arguments
@@ -81,7 +93,7 @@ def main(
         # Configure logging
         log = logger.setup_logger(log_level=log_level.upper())
         log.info("Starting enecoQ data fetcher")
-        log.debug(f"Parameters - Period: {period}, Format: {output_format}")
+        log.debug(f"Parameters - Period: {period}, Format: {output_format}, Config: {config_path}")
 
         # Create controller
         enecoq_controller = controller.EnecoQController(email, password)

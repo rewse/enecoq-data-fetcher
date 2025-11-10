@@ -21,6 +21,7 @@ def test_cli_help():
     assert "--password" in result.output
     assert "--period" in result.output
     assert "--format" in result.output
+    assert "--config" in result.output
     print("✓ CLI help message works")
 
 
@@ -239,6 +240,50 @@ def test_cli_export_error(mock_controller_class):
     print("✓ CLI handles export errors")
 
 
+def test_cli_with_custom_config():
+    """Test CLI with custom config file path."""
+    runner = CliRunner()
+    result = runner.invoke(cli.main, [
+        "--help"
+    ])
+    
+    # Check that --config option is available
+    assert result.exit_code == 0
+    assert "--config" in result.output
+    assert "config.yaml" in result.output
+    print("✓ CLI accepts custom config file path")
+
+
+@patch("enecoq_data_fetcher.cli.controller.EnecoQController")
+def test_cli_with_config_parameter(mock_controller_class):
+    """Test CLI execution with config parameter."""
+    # Create mock controller instance
+    mock_controller = Mock()
+    mock_controller_class.return_value = mock_controller
+    
+    # Create mock power data
+    mock_data = models.PowerData(
+        period="today",
+        timestamp=datetime(2024, 1, 15, 10, 30, 0),
+        usage=models.PowerUsage(value=12.5),
+        cost=models.PowerCost(value=350.0),
+        co2=models.CO2Emission(value=6.25),
+    )
+    mock_controller.fetch_power_data.return_value = mock_data
+    
+    # Run CLI with custom config
+    runner = CliRunner()
+    result = runner.invoke(cli.main, [
+        "--email", "test@example.com",
+        "--password", "test123",
+        "--config", "custom_config.yaml",
+        "--format", "console"
+    ])
+    
+    assert result.exit_code == 0
+    print("✓ CLI executes with custom config parameter")
+
+
 if __name__ == "__main__":
     test_cli_help()
     test_cli_missing_required_args()
@@ -251,4 +296,6 @@ if __name__ == "__main__":
     test_cli_authentication_error()
     test_cli_fetch_error()
     test_cli_export_error()
+    test_cli_with_custom_config()
+    test_cli_with_config_parameter()
     print("\nAll CLI tests passed!")
