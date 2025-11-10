@@ -70,7 +70,7 @@
   - loggingモジュールを使用してログ機能を実装する
   - ログレベル（DEBUG、INFO、WARNING、ERROR）を設定する
   - コンソールにINFOレベル以上のログを出力する
-  - ファイル（~/.enecoq/logs/enecoq.log）にDEBUGレベル以上のログを出力する
+  - ファイル（logs/enecoq.log）にDEBUGレベル以上のログを出力する
   - 認証情報をログに出力しないようにする
   - エラー発生時にエラー内容をログに記録する
   - _要件: 3.5_

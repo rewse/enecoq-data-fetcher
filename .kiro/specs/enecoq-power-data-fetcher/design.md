@@ -278,7 +278,7 @@ class ExportError(EnecoQError):
 
 - **ログ出力先**:
   - コンソール: INFO レベル以上
-  - ファイル: DEBUG レベル以上（`~/.enecoq/logs/enecoq.log`）
+  - ファイル: DEBUG レベル以上（`logs/enecoq.log`）
 
 ## テスト戦略
 
