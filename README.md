@@ -170,7 +170,7 @@ uv run enecoq-fetch --email your@email.com --password yourpassword --config conf
 crontab -e
 
 # 以下を追加（プロジェクトディレクトリのパスを指定）
-42 * * * * cd /path/to/enecoq-data-fetcher && sleep $((RANDOM % 60)) && /path/to/uv run enecoq-fetch --email your@email.com --password yourpassword --output /path/to/enecoq_data.json
+42 * * * * cd /path/to/enecoq-data-fetcher && sleep $((RANDOM \% 60)) && /path/to/uv run enecoq-fetch --email your@email.com --password yourpassword --output /path/to/enecoq_data.json
 ```
 
 注: 負荷分散のため、42を別の数字（59以下の任意の値）に変更することを推奨します。多くのユーザーが同じ時刻にアクセスするとサーバーに負荷がかかるため、0以外のランダムな時刻を選択してください。
