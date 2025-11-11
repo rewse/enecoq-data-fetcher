@@ -84,9 +84,9 @@ class DataExporter:
         self._log.info("Exporting data to console")
         
         # Print header
-        print("=" * 50)
-        print("enecoQ Power Data")
-        print("=" * 50)
+        print("=" * 30)
+        print("enecoQ Data")
+        print("=" * 30)
         print()
 
         # Print period and acquisition timestamp
@@ -104,7 +104,7 @@ class DataExporter:
         print(f"CO2 Emission: {data.co2.value} {data.co2.unit}")
 
         print()
-        print("=" * 50)
+        print("=" * 30)
 
         # Flush output to ensure immediate display
         sys.stdout.flush()
