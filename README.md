@@ -62,9 +62,9 @@ uv run enecoq-fetch --email your@email.com --password yourpassword
 ### コマンドライン引数
 
 | 引数 | 説明 | デフォルト値 | 必須 |
-|------|------|-------------|------|
-| `--email` | enecoQのメールアドレス | - | ✓ |
-| `--password` | enecoQのパスワード | - | ✓ |
+|------|------|--------------|------|
+| `--email` | CYBERHOME (enecoQ) のメールアドレス | - | ✓ |
+| `--password` | CYBERHOME (enecoQ) のパスワード | - | ✓ |
 | `--period` | データ取得期間（`today` または `month`） | `month` | |
 | `--format` | 出力形式（`json` または `console`） | `json` | |
 | `--output` | JSON出力先ファイルパス | - | |
