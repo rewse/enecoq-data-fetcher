@@ -84,25 +84,29 @@ class EnecoQDataFetcher:
         Raises:
             FetchError: If data retrieval or parsing fails.
         """
+        # Get iframe containing enecoQ data
+        self._log.debug("Locating enecoQ iframe")
+        iframe = self._get_enecoq_iframe()
+        
         # Select period from dropdown
         self._log.debug(f"Selecting period: {period}")
-        self._select_period(period)
+        self._select_period(iframe, period)
 
-        # Wait for page to load data
-        self._log.debug("Waiting for page to load data")
-        self.page.wait_for_load_state("networkidle")
+        # Wait for data to load
+        self._log.debug("Waiting for data to load")
+        self.page.wait_for_timeout(2000)  # Wait 2 seconds for data to update
 
-        # Extract data from page
+        # Extract data from iframe
         self._log.debug("Extracting power usage data")
-        usage_value = self._extract_power_usage()
+        usage_value = self._extract_power_usage(iframe)
         self._log.debug(f"Power usage: {usage_value} kWh")
         
         self._log.debug("Extracting power cost data")
-        cost_value = self._extract_power_cost()
+        cost_value = self._extract_power_cost(iframe)
         self._log.debug(f"Power cost: {cost_value} JPY")
         
         self._log.debug("Extracting CO2 emission data")
-        co2_value = self._extract_co2_emission()
+        co2_value = self._extract_co2_emission(iframe)
         self._log.debug(f"CO2 emission: {co2_value} kg")
 
         # Create and return PowerData object
@@ -117,27 +121,66 @@ class EnecoQDataFetcher:
         self._log.info(f"Successfully fetched {period} data")
         return power_data
 
-    def _select_period(self, period: str) -> None:
-        """Select period from dropdown.
+    def _get_enecoq_iframe(self):
+        """Get the iframe containing enecoQ data.
+
+        Returns:
+            Frame object for the enecoQ iframe.
+
+        Raises:
+            FetchError: If iframe is not found.
+        """
+        try:
+            # Wait for iframe to be available
+            self.page.wait_for_selector("iframe", timeout=10000)
+            
+            # Get all iframes
+            frames = self.page.frames
+            
+            # Find the enecoQ iframe (it contains the power data)
+            for frame in frames:
+                # Check if frame contains enecoQ elements
+                if frame.locator("img[alt='使用量']").count() > 0:
+                    self._log.debug("Found enecoQ iframe")
+                    return frame
+            
+            # If not found by content, try to get the first non-main iframe
+            for frame in frames:
+                if frame != self.page.main_frame:
+                    self._log.debug("Using first available iframe")
+                    return frame
+            
+            raise exceptions.FetchError(
+                "enecoQ iframe not found", "IFRAME_NOT_FOUND"
+            )
+        except Exception as e:
+            self._log.error(f"Failed to locate iframe: {str(e)}", exc_info=True)
+            raise exceptions.FetchError(
+                f"Failed to locate iframe: {str(e)}", "IFRAME_ERROR"
+            ) from e
+
+    def _select_period(self, iframe, period: str) -> None:
+        """Select period from dropdown in iframe.
 
         Args:
+            iframe: Frame object containing the dropdown.
             period: Data period ("today" or "month").
 
         Raises:
             FetchError: If period selection fails.
         """
         try:
-            # Locate period dropdown selector
-            selector = 'select[name="dtm"]'
+            # Locate period dropdown (combobox)
+            combobox = iframe.locator("select").first
             
             if period == "today":
-                # Select today option (value="daily")
-                self._log.debug("Selecting 'daily' option from dropdown")
-                self.page.select_option(selector, value="daily")
+                # Select today option
+                self._log.debug("Selecting 'today' option from dropdown")
+                combobox.select_option(label="今日")
             elif period == "month":
-                # Select month option (value="monthly")
-                self._log.debug("Selecting 'monthly' option from dropdown")
-                self.page.select_option(selector, value="monthly")
+                # Select month option
+                self._log.debug("Selecting 'month' option from dropdown")
+                combobox.select_option(label="今月")
             else:
                 self._log.error(f"Invalid period: {period}")
                 raise exceptions.FetchError(
@@ -149,26 +192,36 @@ class EnecoQDataFetcher:
                 f"Failed to select period: {str(e)}", "PERIOD_SELECT_ERROR"
             ) from e
 
-    def _extract_power_usage(self) -> float:
-        """Extract power usage value from page.
+    def _extract_power_usage(self, iframe) -> float:
+        """Extract power usage value from iframe.
 
-        Uses CSS selectors and regex to extract numeric value from the page.
+        Uses CSS selectors and regex to extract numeric value from the iframe.
         Returns 0.0 if data is not found.
+
+        Args:
+            iframe: Frame object containing the data.
 
         Returns:
             Power usage value in kWh.
         """
         try:
-            # Locate power usage element by ID
-            locator = self.page.locator('#usage')
-
+            # Locate dt element containing the usage image
+            dt_locator = iframe.locator("dt:has(img[alt='使用量'])")
+            
             # Check if element exists
-            if locator.count() == 0:
-                self._log.warning("Power usage element not found")
+            if dt_locator.count() == 0:
+                self._log.warning("Power usage dt element not found")
+                return 0.0
+            
+            # Get the next sibling dd element
+            dd_locator = dt_locator.locator("xpath=following-sibling::dd[1]")
+            
+            if dd_locator.count() == 0:
+                self._log.warning("Power usage dd element not found")
                 return 0.0
 
             # Get text content
-            text = locator.first.text_content()
+            text = dd_locator.first.text_content()
             if not text:
                 self._log.warning("Power usage text is empty")
                 return 0.0
@@ -185,26 +238,36 @@ class EnecoQDataFetcher:
             self._log.warning(f"Power usage extraction failed: {e}")
             return 0.0
 
-    def _extract_power_cost(self) -> float:
-        """Extract power cost value from page.
+    def _extract_power_cost(self, iframe) -> float:
+        """Extract power cost value from iframe.
 
-        Uses CSS selectors and regex to extract numeric value from the page.
+        Uses CSS selectors and regex to extract numeric value from the iframe.
         Returns 0.0 if data is not found.
+
+        Args:
+            iframe: Frame object containing the data.
 
         Returns:
             Power cost value in JPY.
         """
         try:
-            # Locate power cost element by ID
-            locator = self.page.locator('#yen')
-
+            # Locate dt element containing the cost image
+            dt_locator = iframe.locator("dt:has(img[alt='使用料金'])")
+            
             # Check if element exists
-            if locator.count() == 0:
-                self._log.warning("Power cost element not found")
+            if dt_locator.count() == 0:
+                self._log.warning("Power cost dt element not found")
+                return 0.0
+            
+            # Get the next sibling dd element
+            dd_locator = dt_locator.locator("xpath=following-sibling::dd[1]")
+            
+            if dd_locator.count() == 0:
+                self._log.warning("Power cost dd element not found")
                 return 0.0
 
             # Get text content
-            text = locator.first.text_content()
+            text = dd_locator.first.text_content()
             if not text:
                 self._log.warning("Power cost text is empty")
                 return 0.0
@@ -221,26 +284,36 @@ class EnecoQDataFetcher:
             self._log.warning(f"Power cost extraction failed: {e}")
             return 0.0
 
-    def _extract_co2_emission(self) -> float:
-        """Extract CO2 emission value from page.
+    def _extract_co2_emission(self, iframe) -> float:
+        """Extract CO2 emission value from iframe.
 
-        Uses CSS selectors and regex to extract numeric value from the page.
+        Uses CSS selectors and regex to extract numeric value from the iframe.
         Returns 0.0 if data is not found.
+
+        Args:
+            iframe: Frame object containing the data.
 
         Returns:
             CO2 emission value in kg.
         """
         try:
-            # Locate CO2 emission element by ID
-            locator = self.page.locator('#co2')
-
+            # Locate dt element containing the CO2 image
+            dt_locator = iframe.locator("dt:has(img[alt='CO2'])")
+            
             # Check if element exists
-            if locator.count() == 0:
-                self._log.warning("CO2 emission element not found")
+            if dt_locator.count() == 0:
+                self._log.warning("CO2 emission dt element not found")
+                return 0.0
+            
+            # Get the next sibling dd element
+            dd_locator = dt_locator.locator("xpath=following-sibling::dd[1]")
+            
+            if dd_locator.count() == 0:
+                self._log.warning("CO2 emission dd element not found")
                 return 0.0
 
             # Get text content
-            text = locator.first.text_content()
+            text = dd_locator.first.text_content()
             if not text:
                 self._log.warning("CO2 emission text is empty")
                 return 0.0
