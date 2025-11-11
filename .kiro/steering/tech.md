@@ -38,15 +38,11 @@ inclusion: always
 
 ### 環境セットアップ
 ```bash
-# 仮想環境の作成と有効化
-uv venv
-source .venv/bin/activate  # macOS/Linux
-
 # 依存関係のインストール
 uv sync
 
 # Playwrightブラウザのインストール
-playwright install
+uv run playwright install
 ```
 
 ### 開発
@@ -55,25 +51,25 @@ playwright install
 uv sync
 
 # CLIの実行
-enecoq-fetch --help
+uv run enecoq-fetch --help
 
 # 基本的な使い方
-enecoq-fetch --email your@email.com --password yourpassword
+uv run enecoq-fetch --email your@email.com --password yourpassword
 
 # 今月のデータをJSON形式で取得
-enecoq-fetch --email your@email.com --password yourpassword --period month --format json
+uv run enecoq-fetch --email your@email.com --password yourpassword --period month --format json
 
 # 今日のデータをコンソールに表示
-enecoq-fetch --email your@email.com --password yourpassword --period today --format console
+uv run enecoq-fetch --email your@email.com --password yourpassword --period today --format console
 
 # JSON出力をファイルに保存
-enecoq-fetch --email your@email.com --password yourpassword --output data/power_data.json
+uv run enecoq-fetch --email your@email.com --password yourpassword --output data/power_data.json
 
 # デバッグモードで実行
-enecoq-fetch --email your@email.com --password yourpassword --log-level DEBUG
+uv run enecoq-fetch --email your@email.com --password yourpassword --log-level DEBUG
 
 # 設定ファイルを使用
-enecoq-fetch --email your@email.com --password yourpassword --config config.yaml
+uv run enecoq-fetch --email your@email.com --password yourpassword --config config.yaml
 ```
 
 ### ビルド
@@ -88,19 +84,19 @@ uv build
 ./tests/run_tests.sh
 
 # 個別テストファイルの実行（PYTHONPATH を設定して実行）
-PYTHONPATH=src python3 tests/test_models.py
-PYTHONPATH=src python3 tests/test_exceptions.py
-PYTHONPATH=src python3 tests/test_authenticator.py
-PYTHONPATH=src python3 tests/test_fetcher.py
-PYTHONPATH=src python3 tests/test_config.py
-PYTHONPATH=src python3 tests/test_exporter.py
-PYTHONPATH=src python3 tests/test_logger.py
-PYTHONPATH=src python3 tests/test_cli.py
-PYTHONPATH=src python3 tests/test_logging_integration.py
-PYTHONPATH=src python3 tests/test_integration.py
+PYTHONPATH=src uv run python tests/test_models.py
+PYTHONPATH=src uv run python tests/test_exceptions.py
+PYTHONPATH=src uv run python tests/test_authenticator.py
+PYTHONPATH=src uv run python tests/test_fetcher.py
+PYTHONPATH=src uv run python tests/test_config.py
+PYTHONPATH=src uv run python tests/test_exporter.py
+PYTHONPATH=src uv run python tests/test_logger.py
+PYTHONPATH=src uv run python tests/test_cli.py
+PYTHONPATH=src uv run python tests/test_logging_integration.py
+PYTHONPATH=src uv run python tests/test_integration.py
 
 # 特定のテスト関数を実行
-PYTHONPATH=src python3 -c "from tests.test_exporter import test_export_json_string; test_export_json_string()"
+PYTHONPATH=src uv run python -c "from tests.test_exporter import test_export_json_string; test_export_json_string()"
 ```
 
 ## テストガイドライン
@@ -164,7 +160,7 @@ user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 
 ### Playwrightブラウザがインストールされていない
 ```bash
-playwright install
+uv run playwright install
 ```
 
 ### 認証エラーが発生する
