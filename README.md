@@ -8,13 +8,11 @@ enecoQは株式会社ファミリーネットジャパンが提供するCYBERHOM
 
 ## 主な機能
 
-- enecoQ Web Service への安全な認証
-- 電力使用量データの取得（kWh単位）
-- 電力使用料金データの取得（円単位）
-- CO2排出量データの取得（kg単位）
+- 電力使用量データの取得
+- 電力使用料金データの取得
+- CO2排出量データの取得
 - 今日または今月のデータ取得
 - JSON形式またはコンソール表示での出力
-- 詳細なエラーハンドリングとログ機能
 
 ## 必要要件
 
@@ -25,7 +23,7 @@ enecoQは株式会社ファミリーネットジャパンが提供するCYBERHOM
 
 ## インストール
 
-### 1. uvのインストール
+### 1. uvのインストール（初回のみ）
 
 uvがインストールされていない場合は、以下のコマンドでインストールしてください：
 
@@ -40,33 +38,25 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 brew install uv
 ```
 
-### 2. パッケージのインストール
+### 2. パッケージのインストール（初回のみ）
 
 ```bash
 # リポジトリをクローン
 git clone <repository-url>
 cd enecoq-data-fetcher
 
-# 仮想環境の作成
-uv venv
-
-# 仮想環境の有効化
-source .venv/bin/activate  # macOS/Linux
-.venv\Scripts\activate     # Windows
-
-# 依存関係のインストール
+# 仮想環境の作成と依存関係のインストール
 uv sync
 
 # Playwrightブラウザのインストール
-playwright install
+uv run playwright install
 ```
-
 ## 使用方法
 
 ### 基本的な使い方
 
 ```bash
-enecoq-fetch --email your@email.com --password yourpassword
+uv run enecoq-fetch --email your@email.com --password yourpassword
 ```
 
 ### コマンドライン引数
@@ -85,25 +75,25 @@ enecoq-fetch --email your@email.com --password yourpassword
 #### 今月のデータをJSON形式で取得
 
 ```bash
-enecoq-fetch --email your@email.com --password yourpassword --period month --format json
+uv run enecoq-fetch --email your@email.com --password yourpassword --period month --format json
 ```
 
 #### 今日のデータをコンソールに表示
 
 ```bash
-enecoq-fetch --email your@email.com --password yourpassword --period today --format console
+uv run enecoq-fetch --email your@email.com --password yourpassword --period today --format console
 ```
 
 #### JSON出力をファイルに保存
 
 ```bash
-enecoq-fetch --email your@email.com --password yourpassword --output data/power_data.json
+uv run enecoq-fetch --email your@email.com --password yourpassword --output data/power_data.json
 ```
 
 #### デバッグモードで実行
 
 ```bash
-enecoq-fetch --email your@email.com --password yourpassword --log-level DEBUG
+uv run enecoq-fetch --email your@email.com --password yourpassword --log-level DEBUG
 ```
 
 ## 出力形式
@@ -113,7 +103,7 @@ enecoq-fetch --email your@email.com --password yourpassword --log-level DEBUG
 ```json
 {
   "period": "month",
-  "timestamp": "2024-01-15T10:30:00",
+  "timestamp": "2024-01-15T10:30:00.123456",
   "usage": 250.5,
   "cost": 7515.0,
   "co2": 125.25
@@ -166,7 +156,7 @@ user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 設定ファイルを使用する場合：
 
 ```bash
-enecoq-fetch --email your@email.com --password yourpassword --config config.yaml
+uv run enecoq-fetch --email your@email.com --password yourpassword --config config.yaml
 ```
 
 ## 他システムとの連携例
@@ -179,8 +169,8 @@ enecoq-fetch --email your@email.com --password yourpassword --config config.yaml
 # crontabを編集
 crontab -e
 
-# 以下を追加
-42 * * * * sleep $((RANDOM \% 60)) && /path/to/.venv/bin/enecoq-fetch --email your@email.com --password yourpassword --output /path/to/data/power_data.json
+# 以下を追加（プロジェクトディレクトリのパスを指定）
+42 * * * * cd /path/to/enecoq-data-fetcher && sleep $((RANDOM \% 60)) && /path/to/uv run enecoq-fetch --email your@email.com --password yourpassword --output /path/to/data/power_data.json
 ```
 
 注: 負荷分散のため、42を別の数字（59以下の任意の値）に変更することを推奨します。多くのユーザーが同じ時刻にアクセスするとサーバーに負荷がかかるため、0以外のランダムな時刻を選択してください。
@@ -222,7 +212,7 @@ command_line:
       scan_interval: 300
 ```
 
-注: cronで定期的にデータを取得して `/config/data/` に保存することで、複数のセンサーが同じファイルを読み込むため、スクレイピングは1回だけで済みます。
+注: cronがデータを取得して `/config/data/` に保存し、複数のセンサーがそのファイルを読むことで、スクレイピングの回数を1回で済ませます。
 
 #### Utility Meter で時間ごとの差分を取得
 
@@ -268,14 +258,8 @@ utility_meter:
 #### 個別テストの実行
 
 ```bash
-# 仮想環境を有効化
-source .venv/bin/activate
-
-# PYTHONPATHを設定
-export PYTHONPATH=src
-
-# 特定のテストファイルを実行
-python3 tests/test_exporter.py
+# PYTHONPATHを設定して実行
+PYTHONPATH=src uv run python tests/test_exporter.py
 ```
 
 詳細なテスト情報は [tests/README.md](tests/README.md) を参照してください。
@@ -287,12 +271,6 @@ uv build
 ```
 
 ## トラブルシューティング
-
-### Playwrightブラウザがインストールされていない
-
-```bash
-playwright install
-```
 
 ### 認証エラーが発生する
 

@@ -75,23 +75,17 @@
 ### 個別テストの実行
 
 ```bash
-# 仮想環境を有効化
-source .venv/bin/activate
-
-# PYTHONPATHを設定
-export PYTHONPATH=src
-
-# 個別のテストファイルを実行
-python3 tests/test_models.py
-python3 tests/test_exceptions.py
-python3 tests/test_authenticator.py
-python3 tests/test_fetcher.py
-python3 tests/test_config.py
-python3 tests/test_exporter.py
-python3 tests/test_logger.py
-python3 tests/test_cli.py
-python3 tests/test_logging_integration.py
-python3 tests/test_integration.py
+# PYTHONPATHを設定して実行
+PYTHONPATH=src uv run python tests/test_models.py
+PYTHONPATH=src uv run python tests/test_exceptions.py
+PYTHONPATH=src uv run python tests/test_authenticator.py
+PYTHONPATH=src uv run python tests/test_fetcher.py
+PYTHONPATH=src uv run python tests/test_config.py
+PYTHONPATH=src uv run python tests/test_exporter.py
+PYTHONPATH=src uv run python tests/test_logger.py
+PYTHONPATH=src uv run python tests/test_cli.py
+PYTHONPATH=src uv run python tests/test_logging_integration.py
+PYTHONPATH=src uv run python tests/test_integration.py
 ```
 
 ## テスト統計
