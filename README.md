@@ -170,7 +170,7 @@ uv run enecoq-fetch --email your@email.com --password yourpassword --config conf
 crontab -e
 
 # 以下を追加（プロジェクトディレクトリのパスを指定）
-42 * * * * cd /path/to/enecoq-data-fetcher && sleep $((RANDOM \% 60)) && /path/to/uv run enecoq-fetch --email your@email.com --password yourpassword --output /path/to/data/power_data.json
+42 * * * * cd /path/to/enecoq-data-fetcher && sleep $((RANDOM % 60)) && /path/to/uv run enecoq-fetch --email your@email.com --password yourpassword --output /path/to/enecoq_data.json
 ```
 
 注: 負荷分散のため、42を別の数字（59以下の任意の値）に変更することを推奨します。多くのユーザーが同じ時刻にアクセスするとサーバーに負荷がかかるため、0以外のランダムな時刻を選択してください。
@@ -184,27 +184,25 @@ cronで定期的に保存したJSONファイルを読み込む方法：
 command_line:
   - sensor:
       name: "enecoQ Power Usage"
-      command: "cat /config/data/power_data.json"
+      command: "cat /config/data/enecoq_data.json"
       value_template: "{{ value_json.usage }}"
       unit_of_measurement: "kWh"
       device_class: energy
       state_class: total_increasing
       icon: mdi:lightning-bolt
       scan_interval: 300  # 5分ごとに更新
-
   - sensor:
       name: "enecoQ Power Cost"
-      command: "cat /config/data/power_data.json"
+      command: "cat /config/data/enecoq_data.json"
       value_template: "{{ value_json.cost }}"
       unit_of_measurement: "JPY"
       device_class: monetary
       state_class: total_increasing
-      icon: mdi:currency-jpy
+      icon: mdi:cash
       scan_interval: 300
-
   - sensor:
       name: "enecoQ CO2 Emission"
-      command: "cat /config/data/power_data.json"
+      command: "cat /config/data/enecoq_data.json"
       value_template: "{{ value_json.co2 }}"
       unit_of_measurement: "kg"
       state_class: total_increasing
@@ -214,9 +212,9 @@ command_line:
 
 注: cronがデータを取得して `/config/data/` に保存し、複数のセンサーがそのファイルを読むことで、スクレイピングの回数を1回で済ませます。
 
-#### Utility Meter で時間ごとの差分を取得
+#### Utility Meter で差分を取得
 
-このツールが返す値は累計値です。時間ごとの差分が必要な場合は、Utility Meter を使用してください。
+このツールが返す値は累計値です。差分が必要な場合は、Utility Meter を使用してください。
 
 累計値から時間ごとの使用量を計算する例：
 
@@ -226,23 +224,41 @@ utility_meter:
   enecoq_power_usage_hourly:
     source: sensor.enecoq_power_usage
     cycle: hourly
-    icon: mdi:lightning-bolt-circle
-  
   enecoq_power_cost_hourly:
     source: sensor.enecoq_power_cost
     cycle: hourly
-    icon: mdi:currency-jpy
-  
   enecoq_co2_emission_hourly:
     source: sensor.enecoq_co2_emission
     cycle: hourly
-    icon: mdi:molecule-co2
 ```
 
 これにより、以下のセンサーが作成されます：
 - `sensor.enecoq_power_usage_hourly`: 1時間あたりの電力使用量（kWh）
 - `sensor.enecoq_power_cost_hourly`: 1時間あたりの電力使用料金（JPY）
 - `sensor.enecoq_co2_emission_hourly`: 1時間あたりのCO2排出量（kg）
+
+同様の方法で ``--period month`` で取得したデータから日次センサーを作ることもできます。
+
+累計値から日付ごとの使用量を計算する例：
+
+```yaml
+# configuration.yaml
+utility_meter:
+  enecoq_power_usage_daily:
+    source: sensor.enecoq_power_usage
+    cycle: daily
+  enecoq_power_cost_daily:
+    source: sensor.enecoq_power_cost
+    cycle: daily
+  enecoq_co2_emission_daily:
+    source: sensor.enecoq_co2_emission
+    cycle: daily
+```
+
+これにより、以下のセンサーが作成されます：
+- `sensor.enecoq_power_usage_daily`: 1日あたりの電力使用量（kWh）
+- `sensor.enecoq_power_cost_daily`: 1日あたりの電力使用料金（JPY）
+- `sensor.enecoq_co2_emission_daily`: 1日あたりのCO2排出量（kg）
 
 ## 開発
 
