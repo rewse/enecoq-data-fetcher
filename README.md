@@ -18,45 +18,50 @@ enecoQは株式会社ファミリーネットジャパンが提供するCYBERHOM
 
 - CYBERHOME（enecoQ）のアカウント
 - Python 3.9以上
-- uv（Pythonパッケージマネージャー）
-- Playwright（ブラウザ自動化）
 
 ## インストール
 
-### 1. uvのインストール（初回のみ）
+### uvxを使用
 
-uvがインストールされていない場合は、以下のコマンドでインストールしてください：
-
-```bash
-# macOS/Linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Windows (PowerShell)
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-
-# または Homebrew (macOS/Linux)
-brew install uv
-```
-
-### 2. パッケージのインストール（初回のみ）
+インストール不要で直接実行できます：
 
 ```bash
-# リポジトリをクローン
-git clone <repository-url>
-cd enecoq-data-fetcher
-
-# 仮想環境の作成と依存関係のインストール
-uv sync
-
-# Playwrightブラウザのインストール
-uv run playwright install
+uvx enecoq-data-fetcher --email your@email.com --password yourpassword
 ```
+
+初回実行時に自動的にパッケージとPlaywrightブラウザがインストールされます。
+
+### uvを使用
+
+```bash
+uv tool install enecoq-data-fetcher
+playwright install chromium
+```
+
+### pipxを使用
+
+```bash
+pipx install enecoq-data-fetcher
+playwright install chromium
+```
+
+### pipを使用
+
+```bash
+pip install enecoq-data-fetcher
+playwright install chromium
+```
+
 ## 使用方法
 
 ### 基本的な使い方
 
 ```bash
-uv run enecoq-fetch --email your@email.com --password yourpassword
+# uvxを使用
+uvx enecoq-data-fetcher --email your@email.com --password yourpassword
+
+# インストール済みの場合
+enecoq-fetch --email your@email.com --password yourpassword
 ```
 
 ### コマンドライン引数
@@ -75,25 +80,25 @@ uv run enecoq-fetch --email your@email.com --password yourpassword
 #### 今月のデータをJSON形式で取得
 
 ```bash
-uv run enecoq-fetch --email your@email.com --password yourpassword --period month --format json
+enecoq-fetch --email your@email.com --password yourpassword --period month --format json
 ```
 
 #### 今日のデータをコンソールに表示
 
 ```bash
-uv run enecoq-fetch --email your@email.com --password yourpassword --period today --format console
+enecoq-fetch --email your@email.com --password yourpassword --period today --format console
 ```
 
 #### JSON出力をファイルに保存
 
 ```bash
-uv run enecoq-fetch --email your@email.com --password yourpassword --output data/power_data.json
+enecoq-fetch --email your@email.com --password yourpassword --output data/power_data.json
 ```
 
 #### デバッグモードで実行
 
 ```bash
-uv run enecoq-fetch --email your@email.com --password yourpassword --log-level DEBUG
+enecoq-fetch --email your@email.com --password yourpassword --log-level DEBUG
 ```
 
 ## 出力形式
@@ -156,7 +161,7 @@ user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 設定ファイルを使用する場合：
 
 ```bash
-uv run enecoq-fetch --email your@email.com --password yourpassword --config config.yaml
+enecoq-fetch --email your@email.com --password yourpassword --config config.yaml
 ```
 
 ## 他システムとの連携例
@@ -169,8 +174,8 @@ uv run enecoq-fetch --email your@email.com --password yourpassword --config conf
 # crontabを編集
 crontab -e
 
-# 以下を追加（プロジェクトディレクトリのパスを指定）
-42 * * * * cd /path/to/enecoq-data-fetcher && sleep $((RANDOM \% 60)) && /path/to/uv run enecoq-fetch --email your@email.com --password yourpassword --output /path/to/enecoq_data.json
+# 以下を追加
+42 * * * * sleep $((RANDOM \% 60)) && enecoq-fetch --email your@email.com --password yourpassword --output /path/to/enecoq_data.json
 ```
 
 注: 負荷分散のため、42を別の数字（59以下の任意の値）に変更することを推奨します。多くのユーザーが同じ時刻にアクセスするとサーバーに負荷がかかるため、0以外のランダムな時刻を選択してください。
