@@ -55,8 +55,14 @@ from enecoq_data_fetcher import logger
 @click.option(
     "--log-level",
     type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False),
-    default="INFO",
-    help="Logging level (default: INFO).",
+    default=None,
+    help="Logging level (default: INFO, or from config file).",
+)
+@click.option(
+    "--log-file",
+    type=click.Path(),
+    default=None,
+    help="Log file path (optional, no file logging by default).",
 )
 def main(
     email: str,
@@ -66,6 +72,7 @@ def main(
     output_path: Optional[str],
     config_path: str,
     log_level: str,
+    log_file: Optional[str],
 ) -> int:
     """enecoQ Data Fetcher - Fetch power usage data from enecoQ Web Service.
 
@@ -97,8 +104,12 @@ def main(
         # Load configuration
         config = config_module.Config.load(
             config_path=config_path if config_path != "config.yaml" or os.path.exists(config_path) else None,
-            log_level=log_level.upper(),
+            log_level=log_level.upper() if log_level is not None else None,
         )
+
+        # Override log_file from command line if specified
+        if log_file is not None:
+            config.log_file = log_file
 
         # Configure logging
         log = logger.setup_logger(log_level=config.log_level, log_file=config.log_file)

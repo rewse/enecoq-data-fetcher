@@ -33,6 +33,7 @@ inclusion: always
 | `--output` | JSON出力先ファイルパス | - | |
 | `--config` | 設定ファイルパス | `config.yaml` | |
 | `--log-level` | ログレベル（`DEBUG`, `INFO`, `WARNING`, `ERROR`） | `INFO` | |
+| `--log-file` | ログファイルパス（指定しない場合はファイル出力なし） | - | |
 
 ## 共通コマンド
 

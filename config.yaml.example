@@ -3,7 +3,7 @@
 
 # Logging configuration
 log_level: INFO  # Options: DEBUG, INFO, WARNING, ERROR
-log_file: logs/enecoq.log
+# log_file: logs/enecoq.log  # Uncomment to enable file logging (console only by default)
 
 # Network configuration
 timeout: 30  # Request timeout in seconds

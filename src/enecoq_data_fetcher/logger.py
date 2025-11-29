@@ -10,11 +10,11 @@ def setup_logger(
     log_level: str = "INFO",
     log_file: Optional[str] = None
 ) -> logging.Logger:
-    """Set up logger with console and file handlers.
+    """Set up logger with console and optional file handlers.
     
     Args:
         log_level: Log level (DEBUG, INFO, WARNING, ERROR).
-        log_file: Optional path to log file. Defaults to logs/enecoq.log.
+        log_file: Optional path to log file. If None, no file logging.
         
     Returns:
         Configured logger instance.
@@ -34,22 +34,19 @@ def setup_logger(
     console_handler.setFormatter(console_formatter)
     logger.addHandler(console_handler)
     
-    # File handler - DEBUG level and above
-    if log_file is None:
-        # Default to logs/enecoq.log in current directory
-        log_file = "logs/enecoq.log"
-    
-    log_path = Path(log_file)
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    file_handler = logging.FileHandler(log_file, encoding="utf-8")
-    file_handler.setLevel(logging.DEBUG)
-    file_formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
-    )
-    file_handler.setFormatter(file_formatter)
-    logger.addHandler(file_handler)
+    # File handler - only if log_file is specified
+    if log_file is not None:
+        log_path = Path(log_file)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        file_handler = logging.FileHandler(log_file, encoding="utf-8")
+        file_handler.setLevel(logging.DEBUG)
+        file_formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S"
+        )
+        file_handler.setFormatter(file_formatter)
+        logger.addHandler(file_handler)
     
     # Set log level based on parameter
     level = getattr(logging, log_level.upper(), logging.INFO)

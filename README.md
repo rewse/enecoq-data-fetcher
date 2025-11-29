@@ -75,7 +75,9 @@ enecoq-data-fetcher --email your@email.com --password yourpassword
 | `--period` | データ取得期間（`today` または `month`） | `month` | |
 | `--format` | 出力形式（`json` または `console`） | `json` | |
 | `--output` | JSON出力先ファイルパス | - | |
+| `--config` | 設定ファイルパス | `config.yaml` | |
 | `--log-level` | ログレベル（`DEBUG`, `INFO`, `WARNING`, `ERROR`） | `INFO` | |
+| `--log-file` | ログファイルパス（指定しない場合はファイル出力なし） | - | |
 
 ### 使用例
 
@@ -141,12 +143,15 @@ CO2 Emission: 125.25 kg
 
 ## ログ
 
-ログは以下の場所に出力されます：
+デフォルトではコンソールのみにログが出力されます。
 
-- **コンソール**: INFOレベル以上
-- **ファイル**: `logs/enecoq.log`（DEBUGレベル以上）
+ファイルにログを出力したい場合は、`--log-file` オプションを使用してください：
 
-ログファイルには認証情報は記録されません。
+```bash
+enecoq-data-fetcher --email your@email.com --password yourpassword --log-file logs/enecoq.log
+```
+
+ログファイルにはDEBUGレベル以上のログが記録されます。ログファイルには認証情報は記録されません。
 
 ## 高度な設定（オプション）
 
@@ -165,6 +170,8 @@ user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 ```bash
 enecoq-data-fetcher --email your@email.com --password yourpassword --config config.yaml
 ```
+
+注: コマンドライン引数と設定ファイルを同時に設定した場合、コマンドライン引数が優先されます。
 
 ## 他システムとの連携例
 

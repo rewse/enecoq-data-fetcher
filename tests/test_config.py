@@ -12,7 +12,7 @@ def test_default_config():
     cfg = config.Config()
     
     assert cfg.log_level == "INFO"
-    assert cfg.log_file == "logs/enecoq.log"
+    assert cfg.log_file is None  # No file logging by default
     assert cfg.timeout == 30
     assert cfg.max_retries == 3
     assert "Mozilla" in cfg.user_agent

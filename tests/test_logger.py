@@ -16,8 +16,8 @@ def test_setup_logger_default():
     assert log.name == "enecoq_data_fetcher"
     assert log.level == logging.DEBUG
     
-    # Check handlers
-    assert len(log.handlers) == 2  # Console and file handlers
+    # Check handlers - only console handler by default
+    assert len(log.handlers) == 1  # Console handler only
     
     print("✓ test_setup_logger_default passed")
 

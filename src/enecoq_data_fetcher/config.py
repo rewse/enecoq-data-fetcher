@@ -25,7 +25,7 @@ class Config:
     """
 
     log_level: str = "INFO"
-    log_file: str = "logs/enecoq.log"
+    log_file: Optional[str] = None
     timeout: int = 30
     max_retries: int = 3
     user_agent: str = (
