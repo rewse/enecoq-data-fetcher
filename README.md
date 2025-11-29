@@ -21,15 +21,17 @@ enecoQは株式会社ファミリーネットジャパンが提供するCYBERHOM
 
 ## インストール
 
-### uvxを使用
+### uvxを使用（推奨）
 
-インストール不要で直接実行できます：
+インストール不要で直接実行できます。初回のみブラウザのインストールが必要です：
 
 ```bash
+# 初回のみ: Playwrightブラウザをインストール
+uvx --from enecoq-data-fetcher playwright install chromium
+
+# 実行
 uvx enecoq-data-fetcher --email your@email.com --password yourpassword
 ```
-
-初回実行時に自動的にパッケージとPlaywrightブラウザがインストールされます。
 
 ### uvを使用
 
@@ -57,10 +59,10 @@ playwright install chromium
 ### 基本的な使い方
 
 ```bash
-# uvxを使用
+# uvxを使用（推奨）
 uvx enecoq-data-fetcher --email your@email.com --password yourpassword
 
-# インストール済みの場合
+# uv tool / pipx / pip でインストール済みの場合
 enecoq-data-fetcher --email your@email.com --password yourpassword
 ```
 
@@ -293,6 +295,22 @@ uv build
 
 ## トラブルシューティング
 
+### Playwrightブラウザがインストールされていない
+
+```
+Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1194/chrome-linux/headless_shell
+```
+
+このエラーが表示された場合は、Playwrightブラウザをインストールしてください：
+
+```bash
+# uvxを使用している場合
+uvx --from enecoq-data-fetcher playwright install chromium
+
+# uv tool / pipx / pip でインストールしている場合
+playwright install chromium
+```
+
 ### 認証エラーが発生する
 
 - メールアドレスとパスワードが正しいか確認してください
@@ -302,3 +320,4 @@ uv build
 
 - `--log-level DEBUG` オプションを使用して詳細なログを確認してください
 - enecoQ Web Service が利用可能か確認してください
+- ログファイル `logs/enecoq.log` を確認してください
