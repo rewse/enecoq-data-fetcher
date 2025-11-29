@@ -78,6 +78,27 @@ uv run enecoq-fetch --email your@email.com --password yourpassword --config conf
 uv build
 ```
 
+### リリース
+```bash
+# パッチバージョンアップ (1.0.0 → 1.0.1)
+make release-patch
+
+# マイナーバージョンアップ (1.0.0 → 1.1.0)
+make release-minor
+
+# メジャーバージョンアップ (1.0.0 → 2.0.0)
+make release-major
+```
+
+各コマンドは以下を自動実行する:
+1. `src/enecoq_data_fetcher/__init__.py` のバージョンを更新
+2. 変更をコミット
+3. Gitタグを作成
+4. リモートリポジトリにプッシュ
+5. GitHub Actionsが自動的にGitHub Releaseを作成し、PyPIにアップロード
+
+詳細は `.github/RELEASE.md` を参照すること
+
 ### テスト
 ```bash
 # 全テストの実行（推奨）
