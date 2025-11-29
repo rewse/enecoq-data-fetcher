@@ -21,7 +21,7 @@ inclusion: always
 
 ## プロジェクト構成
 - パッケージ名: `enecoq-data-fetcher`
-- CLIエントリーポイント: `enecoq-fetch`
+- CLIエントリーポイント: `enecoq-data-fetcher`
 
 ## コマンドライン引数
 | 引数 | 説明 | デフォルト値 | 必須 |
@@ -51,25 +51,25 @@ uv run playwright install
 uv sync
 
 # CLIの実行
-uv run enecoq-fetch --help
+uv run enecoq-data-fetcher --help
 
 # 基本的な使い方
-uv run enecoq-fetch --email your@email.com --password yourpassword
+uv run enecoq-data-fetcher --email your@email.com --password yourpassword
 
 # 今月のデータをJSON形式で取得
-uv run enecoq-fetch --email your@email.com --password yourpassword --period month --format json
+uv run enecoq-data-fetcher --email your@email.com --password yourpassword --period month --format json
 
 # 今日のデータをコンソールに表示
-uv run enecoq-fetch --email your@email.com --password yourpassword --period today --format console
+uv run enecoq-data-fetcher --email your@email.com --password yourpassword --period today --format console
 
 # JSON出力をファイルに保存
-uv run enecoq-fetch --email your@email.com --password yourpassword --output data/power_data.json
+uv run enecoq-data-fetcher --email your@email.com --password yourpassword --output data/power_data.json
 
 # デバッグモードで実行
-uv run enecoq-fetch --email your@email.com --password yourpassword --log-level DEBUG
+uv run enecoq-data-fetcher --email your@email.com --password yourpassword --log-level DEBUG
 
 # 設定ファイルを使用
-uv run enecoq-fetch --email your@email.com --password yourpassword --config config.yaml
+uv run enecoq-data-fetcher --email your@email.com --password yourpassword --config config.yaml
 ```
 
 ### ビルド

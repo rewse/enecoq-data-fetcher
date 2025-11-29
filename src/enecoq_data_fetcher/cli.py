@@ -14,7 +14,7 @@ from enecoq_data_fetcher import logger
 
 
 @click.command()
-@click.version_option(version=__version__, prog_name="enecoq-fetch")
+@click.version_option(version=__version__, prog_name="enecoq-data-fetcher")
 @click.option(
     "--email",
     required=True,
@@ -76,19 +76,19 @@ def main(
 
         \b
         # Fetch this month's data and display in console
-        $ enecoq-fetch --email user@example.com --password secret --format console
+        $ enecoq-data-fetcher --email user@example.com --password secret --format console
 
         \b
         # Fetch today's data and save to JSON file
-        $ enecoq-fetch --email user@example.com --password secret --period today --output data.json
+        $ enecoq-data-fetcher --email user@example.com --password secret --period today --output data.json
 
         \b
         # Fetch with debug logging
-        $ enecoq-fetch --email user@example.com --password secret --log-level DEBUG
+        $ enecoq-data-fetcher --email user@example.com --password secret --log-level DEBUG
 
         \b
         # Use custom config file
-        $ enecoq-fetch --email user@example.com --password secret --config /path/to/config.yaml
+        $ enecoq-data-fetcher --email user@example.com --password secret --config /path/to/config.yaml
     """
     try:
         # Validate arguments

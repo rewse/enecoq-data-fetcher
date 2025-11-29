@@ -38,7 +38,7 @@ Repository = "https://github.com/rewse/enecoq-data-fetcher"
 Issues = "https://github.com/rewse/enecoq-data-fetcher/issues"
 
 [project.scripts]
-enecoq-fetch = "enecoq_data_fetcher.cli:main"
+enecoq-data-fetcher = "enecoq_data_fetcher.cli:main"
 
 [tool.hatch.version]
 path = "src/enecoq_data_fetcher/__init__.py"

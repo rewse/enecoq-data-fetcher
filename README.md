@@ -61,7 +61,7 @@ playwright install chromium
 uvx enecoq-data-fetcher --email your@email.com --password yourpassword
 
 # インストール済みの場合
-enecoq-fetch --email your@email.com --password yourpassword
+enecoq-data-fetcher --email your@email.com --password yourpassword
 ```
 
 ### コマンドライン引数
@@ -80,25 +80,25 @@ enecoq-fetch --email your@email.com --password yourpassword
 #### 今月のデータをJSON形式で取得
 
 ```bash
-enecoq-fetch --email your@email.com --password yourpassword --period month --format json
+enecoq-data-fetcher --email your@email.com --password yourpassword --period month --format json
 ```
 
 #### 今日のデータをコンソールに表示
 
 ```bash
-enecoq-fetch --email your@email.com --password yourpassword --period today --format console
+enecoq-data-fetcher --email your@email.com --password yourpassword --period today --format console
 ```
 
 #### JSON出力をファイルに保存
 
 ```bash
-enecoq-fetch --email your@email.com --password yourpassword --output data/power_data.json
+enecoq-data-fetcher --email your@email.com --password yourpassword --output data/power_data.json
 ```
 
 #### デバッグモードで実行
 
 ```bash
-enecoq-fetch --email your@email.com --password yourpassword --log-level DEBUG
+enecoq-data-fetcher --email your@email.com --password yourpassword --log-level DEBUG
 ```
 
 ## 出力形式
@@ -161,7 +161,7 @@ user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 設定ファイルを使用する場合：
 
 ```bash
-enecoq-fetch --email your@email.com --password yourpassword --config config.yaml
+enecoq-data-fetcher --email your@email.com --password yourpassword --config config.yaml
 ```
 
 ## 他システムとの連携例
@@ -175,7 +175,7 @@ enecoq-fetch --email your@email.com --password yourpassword --config config.yaml
 crontab -e
 
 # 以下を追加
-42 * * * * sleep $((RANDOM \% 60)) && enecoq-fetch --email your@email.com --password yourpassword --output /path/to/enecoq_data.json
+42 * * * * sleep $((RANDOM \% 60)) && enecoq-data-fetcher --email your@email.com --password yourpassword --output /path/to/enecoq_data.json
 ```
 
 注: 負荷分散のため、42を別の数字（59以下の任意の値）に変更することを推奨します。多くのユーザーが同じ時刻にアクセスするとサーバーに負荷がかかるため、0以外のランダムな時刻を選択してください。
