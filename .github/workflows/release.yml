@@ -7,10 +7,14 @@ on:
 
 permissions:
   contents: write
+  id-token: write  # Required for Trusted Publishers
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment:
+      name: release
+      url: https://pypi.org/project/enecoq-data-fetcher/
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -37,9 +41,6 @@ jobs:
             dist/*
 
       - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          uv tool install twine
-          uv tool run twine upload dist/*
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
