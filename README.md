@@ -21,7 +21,7 @@ enecoQは株式会社ファミリーネットジャパンが提供するCYBERHOM
 
 ## インストール
 
-### uvxを使用（推奨）
+### uvxを使用
 
 インストール不要で直接実行できます。初回のみブラウザのインストールが必要です：
 
@@ -59,7 +59,7 @@ playwright install chromium
 ### 基本的な使い方
 
 ```bash
-# uvxを使用（推奨）
+# uvxを使用
 uvx enecoq-data-fetcher --email your@email.com --password yourpassword
 
 # uv tool / pipx / pip でインストール済みの場合
