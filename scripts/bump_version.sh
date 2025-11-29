@@ -2,7 +2,7 @@
 set -e
 
 # Get current version from __init__.py
-CURRENT_VERSION=$(grep -oP '__version__ = "\K[^"]+' src/enecoq_data_fetcher/__init__.py)
+CURRENT_VERSION=$(grep '__version__ = ' src/enecoq_data_fetcher/__init__.py | sed 's/__version__ = "\(.*\)"/\1/')
 
 # Parse version components
 IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
