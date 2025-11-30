@@ -3,7 +3,7 @@
 import time
 from typing import Optional
 
-from playwright.sync_api import sync_playwright, Browser, BrowserContext, Page
+from playwright.sync_api import sync_playwright
 
 from enecoq_data_fetcher import authenticator
 from enecoq_data_fetcher import config as config_module
@@ -86,13 +86,13 @@ class EnecoQController:
         """
         # Validate period
         if period not in ("today", "month"):
-            self._log.error(f"Invalid period specified: {period}")
+            self._log.error("Invalid period specified: %s", period)
             raise exceptions.FetchError(
-                f"Invalid period: {period}. Must be 'today' or 'month'.",
+                "Invalid period: %s. Must be 'today' or 'month'." % period,
                 "INVALID_PERIOD",
             )
 
-        self._log.info(f"Starting data fetch for period: {period}")
+        self._log.info("Starting data fetch for period: %s", period)
 
         # Execute with retry logic
         power_data = self._execute_with_retry(
@@ -142,7 +142,7 @@ class EnecoQController:
                         self._log.info("Authentication successful")
                         
                         # Fetch data
-                        self._log.debug(f"Fetching {period} data")
+                        self._log.debug("Fetching %s data", period)
                         data_fetcher = fetcher.EnecoQDataFetcher(page)
                         
                         if period == "today":
@@ -150,7 +150,12 @@ class EnecoQController:
                         else:  # period == "month"
                             power_data = data_fetcher.fetch_month_data()
                         
-                        self._log.debug(f"Data fetched: usage={power_data.usage.value}, cost={power_data.cost.value}, co2={power_data.co2.value}")
+                        self._log.debug(
+                            "Data fetched: usage=%s, cost=%s, co2=%s",
+                            power_data.usage.value,
+                            power_data.cost.value,
+                            power_data.co2.value
+                        )
                         return power_data
                         
                     finally:
@@ -178,13 +183,15 @@ class EnecoQController:
         
         for attempt in range(1, self._max_retries + 1):
             try:
-                self._log.debug(f"Authentication attempt {attempt}/{self._max_retries}")
+                self._log.debug(
+                    "Authentication attempt %s/%s", attempt, self._max_retries
+                )
                 self._authenticator.login(page)
                 return  # Success
                 
             except exceptions.AuthenticationError as e:
                 last_error = e
-                self._log.error(f"Authentication failed: {e}")
+                self._log.error("Authentication failed: %s", e)
                 
                 # Don't retry on authentication errors (invalid credentials)
                 # These are not transient failures
@@ -192,18 +199,20 @@ class EnecoQController:
                 
             except Exception as e:
                 last_error = e
-                self._log.warning(f"Authentication attempt {attempt} failed: {e}")
+                self._log.warning("Authentication attempt %s failed: %s", attempt, e)
                 
                 # Retry on other errors (network issues, etc.)
                 if attempt < self._max_retries:
                     wait_time = self._backoff_factor ** attempt
-                    self._log.info(f"Retrying in {wait_time} seconds...")
+                    self._log.info("Retrying in %s seconds...", wait_time)
                     time.sleep(wait_time)
                     continue
         
         # All retries exhausted
         raise exceptions.AuthenticationError(
-            f"Authentication failed after {self._max_retries} attempts: {last_error}",
+            "Authentication failed after %s attempts: %s" % (
+                self._max_retries, last_error
+            ),
             "AUTH_RETRY_EXHAUSTED",
         ) from last_error
 
@@ -226,7 +235,9 @@ class EnecoQController:
         
         for attempt in range(1, self._max_retries + 1):
             try:
-                self._log.debug(f"Operation attempt {attempt}/{self._max_retries}")
+                self._log.debug(
+                    "Operation attempt %s/%s", attempt, self._max_retries
+                )
                 return operation()
                 
             except exceptions.AuthenticationError:
@@ -236,23 +247,25 @@ class EnecoQController:
                 
             except (exceptions.FetchError, ConnectionError, TimeoutError) as e:
                 last_error = e
-                self._log.warning(f"Operation attempt {attempt} failed: {e}")
+                self._log.warning("Operation attempt %s failed: %s", attempt, e)
                 
                 # Retry on transient errors
                 if attempt < self._max_retries:
                     wait_time = self._backoff_factor ** attempt
-                    self._log.info(f"Retrying in {wait_time} seconds...")
+                    self._log.info("Retrying in %s seconds...", wait_time)
                     time.sleep(wait_time)
                     continue
                     
             except Exception as e:
                 # Don't retry on unexpected errors
-                self._log.error(f"Unexpected error: {e}", exc_info=True)
+                self._log.error("Unexpected error: %s", e, exc_info=True)
                 raise
         
         # All retries exhausted
         raise exceptions.FetchError(
-            f"Operation failed after {self._max_retries} attempts: {last_error}",
+            "Operation failed after %s attempts: %s" % (
+                self._max_retries, last_error
+            ),
             "RETRY_EXHAUSTED",
         ) from last_error
 
@@ -272,18 +285,18 @@ class EnecoQController:
         Raises:
             ExportError: If export fails.
         """
-        self._log.info(f"Exporting data in {output_format} format")
+        self._log.info("Exporting data in %s format", output_format)
         data_exporter = exporter.DataExporter()
         
         if output_format == "json":
             data_exporter.export_json(power_data, output_path)
-            self._log.debug(f"Data exported to: {output_path or 'stdout'}")
+            self._log.debug("Data exported to: %s", output_path or "stdout")
         elif output_format == "console":
             data_exporter.export_console(power_data)
             self._log.debug("Data exported to console")
         else:
-            self._log.error(f"Invalid output format: {output_format}")
+            self._log.error("Invalid output format: %s", output_format)
             raise exceptions.ExportError(
-                f"Invalid output format: {output_format}",
+                "Invalid output format: %s" % output_format,
                 "INVALID_FORMAT",
             )

@@ -46,9 +46,11 @@ class EnecoQDataFetcher:
             self._log.info("Fetching today's data")
             return self._fetch_data_for_period("today")
         except Exception as e:
-            self._log.error(f"Failed to fetch today's data: {str(e)}", exc_info=True)
+            self._log.error(
+                "Failed to fetch today's data: %s", str(e), exc_info=True
+            )
             raise exceptions.FetchError(
-                f"Failed to fetch today's data: {str(e)}", "FETCH_TODAY_ERROR"
+                "Failed to fetch today's data: %s" % str(e), "FETCH_TODAY_ERROR"
             ) from e
 
     def fetch_month_data(self) -> models.PowerData:
@@ -67,9 +69,11 @@ class EnecoQDataFetcher:
             self._log.info("Fetching month's data")
             return self._fetch_data_for_period("month")
         except Exception as e:
-            self._log.error(f"Failed to fetch month's data: {str(e)}", exc_info=True)
+            self._log.error(
+                "Failed to fetch month's data: %s", str(e), exc_info=True
+            )
             raise exceptions.FetchError(
-                f"Failed to fetch month's data: {str(e)}", "FETCH_MONTH_ERROR"
+                "Failed to fetch month's data: %s" % str(e), "FETCH_MONTH_ERROR"
             ) from e
 
     def _fetch_data_for_period(self, period: str) -> models.PowerData:
@@ -89,7 +93,7 @@ class EnecoQDataFetcher:
         iframe = self._get_enecoq_iframe()
         
         # Select period from dropdown
-        self._log.debug(f"Selecting period: {period}")
+        self._log.debug("Selecting period: %s", period)
         self._select_period(iframe, period)
 
         # Wait for data to load
@@ -99,15 +103,15 @@ class EnecoQDataFetcher:
         # Extract data from iframe
         self._log.debug("Extracting power usage data")
         usage_value = self._extract_power_usage(iframe)
-        self._log.debug(f"Power usage: {usage_value} kWh")
+        self._log.debug("Power usage: %s kWh", usage_value)
         
         self._log.debug("Extracting power cost data")
         cost_value = self._extract_power_cost(iframe)
-        self._log.debug(f"Power cost: {cost_value} JPY")
+        self._log.debug("Power cost: %s JPY", cost_value)
         
         self._log.debug("Extracting CO2 emission data")
         co2_value = self._extract_co2_emission(iframe)
-        self._log.debug(f"CO2 emission: {co2_value} kg")
+        self._log.debug("CO2 emission: %s kg", co2_value)
 
         # Create and return PowerData object
         power_data = models.PowerData(
@@ -118,7 +122,7 @@ class EnecoQDataFetcher:
             co2=models.CO2Emission(value=co2_value),
         )
         
-        self._log.info(f"Successfully fetched {period} data")
+        self._log.info("Successfully fetched %s data", period)
         return power_data
 
     def _get_enecoq_iframe(self):
@@ -154,9 +158,9 @@ class EnecoQDataFetcher:
                 "enecoQ iframe not found", "IFRAME_NOT_FOUND"
             )
         except Exception as e:
-            self._log.error(f"Failed to locate iframe: {str(e)}", exc_info=True)
+            self._log.error("Failed to locate iframe: %s", str(e), exc_info=True)
             raise exceptions.FetchError(
-                f"Failed to locate iframe: {str(e)}", "IFRAME_ERROR"
+                "Failed to locate iframe: %s" % str(e), "IFRAME_ERROR"
             ) from e
 
     def _select_period(self, iframe, period: str) -> None:
@@ -182,14 +186,14 @@ class EnecoQDataFetcher:
                 self._log.debug("Selecting 'month' option from dropdown")
                 combobox.select_option(label="今月")
             else:
-                self._log.error(f"Invalid period: {period}")
+                self._log.error("Invalid period: %s", period)
                 raise exceptions.FetchError(
-                    f"Invalid period: {period}", "INVALID_PERIOD"
+                    "Invalid period: %s" % period, "INVALID_PERIOD"
                 )
         except Exception as e:
-            self._log.error(f"Failed to select period: {str(e)}", exc_info=True)
+            self._log.error("Failed to select period: %s", str(e), exc_info=True)
             raise exceptions.FetchError(
-                f"Failed to select period: {str(e)}", "PERIOD_SELECT_ERROR"
+                "Failed to select period: %s" % str(e), "PERIOD_SELECT_ERROR"
             ) from e
 
     def _extract_power_usage(self, iframe) -> float:
@@ -231,11 +235,11 @@ class EnecoQDataFetcher:
             if match:
                 return float(match.group(1))
 
-            self._log.warning(f"Could not extract numeric value from: {text}")
+            self._log.warning("Could not extract numeric value from: %s", text)
             return 0.0
         except Exception as e:
             # Return empty value if extraction fails
-            self._log.warning(f"Power usage extraction failed: {e}")
+            self._log.warning("Power usage extraction failed: %s", e)
             return 0.0
 
     def _extract_power_cost(self, iframe) -> float:
@@ -277,11 +281,11 @@ class EnecoQDataFetcher:
             if match:
                 return float(match.group(1))
 
-            self._log.warning(f"Could not extract numeric value from: {text}")
+            self._log.warning("Could not extract numeric value from: %s", text)
             return 0.0
         except Exception as e:
             # Return empty value if extraction fails
-            self._log.warning(f"Power cost extraction failed: {e}")
+            self._log.warning("Power cost extraction failed: %s", e)
             return 0.0
 
     def _extract_co2_emission(self, iframe) -> float:
@@ -323,9 +327,9 @@ class EnecoQDataFetcher:
             if match:
                 return float(match.group(1))
 
-            self._log.warning(f"Could not extract numeric value from: {text}")
+            self._log.warning("Could not extract numeric value from: %s", text)
             return 0.0
         except Exception as e:
             # Return empty value if extraction fails
-            self._log.warning(f"CO2 emission extraction failed: {e}")
+            self._log.warning("CO2 emission extraction failed: %s", e)
             return 0.0

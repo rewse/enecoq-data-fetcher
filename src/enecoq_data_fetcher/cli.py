@@ -73,7 +73,7 @@ def main(
     config_path: str,
     log_level: str,
     log_file: Optional[str],
-) -> int:
+) -> None:
     """enecoQ Data Fetcher - Fetch power usage data from enecoQ Web Service.
 
     This tool retrieves power usage, cost, and CO2 emission data from the
@@ -114,8 +114,14 @@ def main(
         # Configure logging
         log = logger.setup_logger(log_level=config.log_level, log_file=config.log_file)
         log.info("Starting enecoQ data fetcher")
-        log.debug(f"Parameters - Period: {period}, Format: {output_format}, Config: {config_path}")
-        log.debug(f"Configuration - Log level: {config.log_level}, Timeout: {config.timeout}, Max retries: {config.max_retries}")
+        log.debug(
+            "Parameters - Period: %s, Format: %s, Config: %s",
+            period, output_format, config_path
+        )
+        log.debug(
+            "Configuration - Log level: %s, Timeout: %s, Max retries: %s",
+            config.log_level, config.timeout, config.max_retries
+        )
 
         # Create controller with config
         enecoq_controller = controller.EnecoQController(email, password, config=config)
@@ -130,8 +136,8 @@ def main(
         # Display success message for JSON format
         if output_format.lower() == "json":
             if output_path:
-                click.echo(f"Data successfully exported to: {output_path}")
-                log.info(f"Data successfully exported to: {output_path}")
+                click.echo("Data successfully exported to: %s" % output_path)
+                log.info("Data successfully exported to: %s", output_path)
             else:
                 # Data was already printed by exporter
                 log.info("Data successfully exported to console")
@@ -140,38 +146,38 @@ def main(
 
     except click.BadParameter as e:
         log = logger.get_logger()
-        log.error(f"Invalid argument: {e.message}")
-        click.echo(f"Invalid argument: {e.message}", err=True)
+        log.error("Invalid argument: %s", e.message)
+        click.echo("Invalid argument: %s" % e.message, err=True)
         sys.exit(6)
 
     except exceptions.AuthenticationError as e:
         log = logger.get_logger()
-        log.error(f"Authentication error: {e}")
-        click.echo(f"Authentication error: {e}", err=True)
+        log.error("Authentication error: %s", e)
+        click.echo("Authentication error: %s" % e, err=True)
         sys.exit(1)
 
     except exceptions.FetchError as e:
         log = logger.get_logger()
-        log.error(f"Fetch error: {e}")
-        click.echo(f"Fetch error: {e}", err=True)
+        log.error("Fetch error: %s", e)
+        click.echo("Fetch error: %s" % e, err=True)
         sys.exit(2)
 
     except exceptions.ExportError as e:
         log = logger.get_logger()
-        log.error(f"Export error: {e}")
-        click.echo(f"Export error: {e}", err=True)
+        log.error("Export error: %s", e)
+        click.echo("Export error: %s" % e, err=True)
         sys.exit(3)
 
     except exceptions.EnecoQError as e:
         log = logger.get_logger()
-        log.error(f"Error: {e}")
-        click.echo(f"Error: {e}", err=True)
+        log.error("Error: %s", e)
+        click.echo("Error: %s" % e, err=True)
         sys.exit(4)
 
     except Exception as e:
         log = logger.get_logger()
-        log.error(f"Unexpected error: {e}", exc_info=True)
-        click.echo(f"Unexpected error: {e}", err=True)
+        log.error("Unexpected error: %s", e, exc_info=True)
+        click.echo("Unexpected error: %s" % e, err=True)
         sys.exit(5)
 
 
@@ -206,13 +212,13 @@ def _validate_arguments(
     # Additional validation if needed
     if period.lower() not in ("today", "month"):
         raise click.BadParameter(
-            f"Invalid period: {period}. Must be 'today' or 'month'."
+            "Invalid period: %s. Must be 'today' or 'month'." % period
         )
 
     # Validate output format (already validated by Click's Choice type)
     if output_format.lower() not in ("json", "console"):
         raise click.BadParameter(
-            f"Invalid format: {output_format}. Must be 'json' or 'console'."
+            "Invalid format: %s. Must be 'json' or 'console'." % output_format
         )
 
     # Validate output_path is only used with JSON format

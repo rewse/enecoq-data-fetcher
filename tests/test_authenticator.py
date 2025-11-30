@@ -1,6 +1,6 @@
 """Tests for authenticator component."""
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from enecoq_data_fetcher import authenticator
 from enecoq_data_fetcher import exceptions

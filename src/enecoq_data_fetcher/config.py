@@ -56,7 +56,7 @@ class Config:
 
         config_file = Path(config_path)
         if not config_file.exists():
-            raise FileNotFoundError(f"Config file not found: {config_path}")
+            raise FileNotFoundError("Config file not found: %s" % config_path)
 
         with open(config_file, "r", encoding="utf-8") as f:
             config_data = yaml.safe_load(f)
@@ -97,10 +97,13 @@ class Config:
         if config_path and os.path.exists(config_path):
             try:
                 config = cls.from_file(config_path)
-            except (ValueError, FileNotFoundError) as e:
+            except (ValueError, FileNotFoundError):
                 # If file loading fails, use defaults
                 # This allows the tool to work without YAML library
-                pass
+                import logging
+                logging.getLogger("enecoq_data_fetcher").warning(
+                    "Failed to load config file: %s, using defaults", config_path
+                )
 
         # Apply command-line overrides
         if log_level is not None:

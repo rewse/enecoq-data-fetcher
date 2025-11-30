@@ -51,7 +51,7 @@ class EnecoQAuthenticator:
         """
         try:
             # Navigate to login page
-            self._log.debug(f"Navigating to login page: {self.LOGIN_URL}")
+            self._log.debug("Navigating to login page: %s", self.LOGIN_URL)
             page.goto(self.LOGIN_URL, wait_until="networkidle")
             
             # Fill in email
@@ -87,7 +87,7 @@ class EnecoQAuthenticator:
                 if error_elements.count() > 0:
                     error_text = error_elements.first.text_content()
                     if error_text:
-                        error_msg = f"Authentication failed: {error_text.strip()}"
+                        error_msg = "Authentication failed: %s" % error_text.strip()
                 
                 self._log.error(error_msg)
                 raise exceptions.AuthenticationError(error_msg)
@@ -99,9 +99,11 @@ class EnecoQAuthenticator:
             raise
         except Exception as e:
             # Wrap other exceptions in AuthenticationError
-            self._log.error(f"Login failed due to unexpected error: {str(e)}", exc_info=True)
+            self._log.error(
+                "Login failed due to unexpected error: %s", str(e), exc_info=True
+            )
             raise exceptions.AuthenticationError(
-                f"Login failed due to unexpected error: {str(e)}"
+                "Login failed due to unexpected error: %s" % str(e)
             ) from e
 
     def is_logged_in(self, page: Page) -> bool:
@@ -120,9 +122,9 @@ class EnecoQAuthenticator:
             # Check for logout link which indicates successful login
             logout_link = page.locator(self.LOGGED_IN_INDICATOR)
             is_logged_in = logout_link.count() > 0
-            self._log.debug(f"Login status check: {is_logged_in}")
+            self._log.debug("Login status check: %s", is_logged_in)
             return is_logged_in
         except Exception as e:
             # If any error occurs during check, assume not logged in
-            self._log.debug(f"Login status check failed: {e}")
+            self._log.debug("Login status check failed: %s", e)
             return False

@@ -53,11 +53,11 @@ class DataExporter:
 
             # Write to file if path is provided
             if output_path:
-                self._log.info(f"Writing JSON to file: {output_path}")
+                self._log.info("Writing JSON to file: %s", output_path)
                 output_file = Path(output_path)
                 output_file.parent.mkdir(parents=True, exist_ok=True)
                 output_file.write_text(json_str, encoding="utf-8")
-                self._log.debug(f"JSON successfully written to: {output_path}")
+                self._log.debug("JSON successfully written to: %s", output_path)
             else:
                 self._log.debug("Outputting JSON to stdout")
                 print(json_str)
@@ -65,14 +65,14 @@ class DataExporter:
             return json_str
 
         except (OSError, IOError) as e:
-            self._log.error(f"Failed to export JSON: {e}", exc_info=True)
+            self._log.error("Failed to export JSON: %s", e, exc_info=True)
             raise exceptions.ExportError(
-                f"Failed to export JSON: {e}"
+                "Failed to export JSON: %s" % e
             ) from e
         except (TypeError, ValueError) as e:
-            self._log.error(f"Failed to serialize data to JSON: {e}", exc_info=True)
+            self._log.error("Failed to serialize data to JSON: %s", e, exc_info=True)
             raise exceptions.ExportError(
-                f"Failed to serialize data to JSON: {e}"
+                "Failed to serialize data to JSON: %s" % e
             ) from e
 
     def export_console(self, data: models.PowerData) -> None:
@@ -90,18 +90,18 @@ class DataExporter:
         print()
 
         # Print period and acquisition timestamp
-        print(f"Period: {data.period}")
-        print(f"Timestamp: {data.timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
+        print("Period: %s" % data.period)
+        print("Timestamp: %s" % data.timestamp.strftime("%Y-%m-%d %H:%M:%S"))
         print()
 
         # Print power usage
-        print(f"Power Usage: {data.usage.value} {data.usage.unit}")
+        print("Power Usage: %s %s" % (data.usage.value, data.usage.unit))
 
         # Print power cost
-        print(f"Power Cost: {data.cost.value} {data.cost.unit}")
+        print("Power Cost: %s %s" % (data.cost.value, data.cost.unit))
 
         # Print CO2 emission
-        print(f"CO2 Emission: {data.co2.value} {data.co2.unit}")
+        print("CO2 Emission: %s %s" % (data.co2.value, data.co2.unit))
 
         print()
         print("=" * 30)

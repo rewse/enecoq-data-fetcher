@@ -19,6 +19,9 @@ def test_setup_logger_default():
     # Check handlers - only console handler by default
     assert len(log.handlers) == 1  # Console handler only
     
+    # Check that sensitive data filter is added
+    assert len(log.filters) >= 1
+    
     print("✓ test_setup_logger_default passed")
 
 

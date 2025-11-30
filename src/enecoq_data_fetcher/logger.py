@@ -25,6 +25,10 @@ def setup_logger(
     # Remove existing handlers to avoid duplicates
     logger.handlers.clear()
     
+    # Add sensitive data filter to logger
+    sensitive_filter = SensitiveDataFilter()
+    logger.addFilter(sensitive_filter)
+    
     # Console handler - INFO level and above
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
