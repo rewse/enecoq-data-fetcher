@@ -2,6 +2,7 @@
 
 import os
 import sys
+from datetime import datetime
 from typing import Optional
 
 import click
@@ -113,7 +114,8 @@ def main(
 
         # Configure logging
         log = logger.setup_logger(log_level=config.log_level, log_file=config.log_file)
-        log.info("Starting enecoQ data fetcher")
+        start_time = datetime.now()
+        log.info("Starting enecoQ data fetcher at %s", start_time.isoformat())
         log.debug(
             "Parameters - Period: %s, Format: %s, Config: %s",
             period, output_format, config_path
@@ -142,7 +144,8 @@ def main(
                 # Data was already printed by exporter
                 log.info("Data successfully exported to console")
         
-        log.info("enecoQ data fetcher completed successfully")
+        end_time = datetime.now()
+        log.info("enecoQ data fetcher completed at %s", end_time.isoformat())
 
     except click.BadParameter as e:
         log = logger.get_logger()
