@@ -11,12 +11,15 @@ inclusion: always
 ```
 enecoq-data-fetcher/
 ├── .git/                       # Gitリポジトリ
+├── .github/                    # GitHub設定
+├── .hypothesis/                # Hypothesisテストデータ（自動生成）
 ├── .kiro/                      # Kiro設定
-│   └── steering/              # Steering rules
 ├── .venv/                      # Python仮想環境
+├── scripts/                    # ユーティリティスクリプト
+│   └── bump_version.sh        # バージョン更新スクリプト
 ├── src/
 │   └── enecoq_data_fetcher/   # メインパッケージ
-│       ├── __init__.py        # パッケージ初期化
+│       ├── __init__.py        # パッケージ初期化・バージョン定義
 │       ├── cli.py             # CLIエントリーポイント
 │       ├── controller.py      # メインコントローラー
 │       ├── authenticator.py   # 認証コンポーネント
@@ -27,9 +30,12 @@ enecoq-data-fetcher/
 │       ├── exceptions.py      # カスタム例外
 │       ├── logger.py          # ログ設定
 │       └── py.typed           # 型情報マーカー
+├── tests/                      # テストスイート
 ├── .gitignore                 # Git除外設定
 ├── .python-version            # Pythonバージョン指定
+├── config.yaml.example        # 設定ファイルサンプル
 ├── LICENSE                    # ライセンス
+├── Makefile                   # ビルド・リリースタスク
 ├── README.md                  # プロジェクトドキュメント
 ├── pyproject.toml             # プロジェクト設定
 └── uv.lock                    # 依存関係ロックファイル
