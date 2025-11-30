@@ -64,6 +64,3 @@ logs/*.log
 *.csv
 data/
 output/
-
-# Kiro settings (contains sensitive tokens)
-.kiro/settings/mcp.json
