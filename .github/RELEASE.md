@@ -4,23 +4,23 @@
 
 ## 前提条件
 
-GitHubリポジトリに `PYPI_API_TOKEN` シークレットを設定する必要があります。
+PyPI の Trusted Publishers を使用しているため、API トークンの設定は不要です。
 
-### PyPI API トークンの設定
+### Trusted Publishers の設定（初回のみ）
 
-1. PyPI でAPIトークンを作成
-   - https://pypi.org/manage/account/token/ にアクセス
-   - "Add API token" をクリック
-   - Token name: `github-actions`
-   - Scope: "Entire account (all projects)" または "Project: enecoq-data-fetcher"
-   - トークンをコピー
+1. PyPI でプロジェクトの Trusted Publishers を設定
+   - https://pypi.org/manage/project/enecoq-data-fetcher/settings/publishing/ にアクセス
+   - "Add a new publisher" で以下を設定:
+     - Owner: `rewse`
+     - Repository name: `enecoq-data-fetcher`
+     - Workflow name: `release.yml`
+     - Environment name: `release`
 
-2. GitHubリポジトリにシークレットを追加
-   - リポジトリの Settings > Secrets and variables > Actions に移動
-   - "New repository secret" をクリック
-   - Name: `PYPI_API_TOKEN`
-   - Secret: コピーしたトークンを貼り付け
-   - "Add secret" をクリック
+2. GitHub リポジトリで Environment を作成
+   - リポジトリの Settings > Environments に移動
+   - "New environment" をクリック
+   - Name: `release`
+   - "Configure environment" をクリック
 
 ## リリース手順（簡単な方法）
 
@@ -105,8 +105,8 @@ Semantic Versioning (SemVer) に従います：
 ### GitHub Actionsが失敗する
 
 1. Actions タブでエラーログを確認
-2. `PYPI_API_TOKEN` シークレットが正しく設定されているか確認
-3. PyPI APIトークンが有効か確認
+2. PyPI の Trusted Publishers 設定が正しいか確認
+3. GitHub の `release` Environment が存在するか確認
 
 ### 同じバージョンを再アップロードできない
 
