@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -30,13 +32,20 @@ jobs:
       - name: Build package
         run: uv build
 
-      - name: Create GitHub Release
-        uses: release-drafter/release-drafter@v6
+      - name: Generate Release Notes
+        id: changelog
+        uses: orhun/git-cliff-action@v4
         with:
-          publish: true
-          tag: ${{ github.ref_name }}
+          config: cliff.toml
+          args: --latest --strip header
+
+      - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "${{ github.ref_name }}" \
+            --notes "${{ steps.changelog.outputs.content }}"
 
       - name: Upload Release Assets
         env:
