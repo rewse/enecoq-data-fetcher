@@ -51,6 +51,14 @@
   - エラーハンドリング
   - 設定ファイル統合
 
+### プロパティベーステスト
+
+- **test_pbt.py** - Hypothesis を使用したプロパティベーステスト (17テスト)
+  - PowerUsage/PowerCost/CO2Emission の値保持プロパティ
+  - PowerData の構造とシリアライゼーションプロパティ
+  - 例外クラスの継承とメッセージフォーマットプロパティ
+  - JSON シリアライゼーションの不変条件
+
 ### 統合テスト
 
 - **test_logging_integration.py** - ログ統合テスト (2テスト)
@@ -86,12 +94,17 @@ PYTHONPATH=src uv run python tests/test_logger.py
 PYTHONPATH=src uv run python tests/test_cli.py
 PYTHONPATH=src uv run python tests/test_logging_integration.py
 PYTHONPATH=src uv run python tests/test_integration.py
+
+# プロパティベーステスト（hypothesis が必要）
+uv sync --extra test
+PYTHONPATH=src uv run python tests/test_pbt.py
 ```
 
 ## テスト統計
 
-- **総テスト数**: 93テスト
-- **ユニットテスト**: 83テスト
+- **総テスト数**: 110テスト
+- **ユニットテスト**: 81テスト
+- **プロパティベーステスト**: 17テスト
 - **統合テスト**: 10テスト
 
 ### カバレッジ
@@ -123,5 +136,7 @@ PYTHONPATH=src uv run python tests/test_integration.py
 ## 注意事項
 
 - PyYAMLがインストールされていない場合、一部のYAML関連テストはスキップされます
+- Hypothesis がインストールされていない場合、プロパティベーステストはスキップされます
+  - インストール: `uv sync --extra test`
 - テストはモックを使用しているため、実際のenecoQ Webサービスへの接続は不要です
 - ログエラーメッセージは一部のテストで表示されますが、これは正常な動作です

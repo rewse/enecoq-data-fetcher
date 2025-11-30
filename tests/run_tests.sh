@@ -114,6 +114,25 @@ else
 fi
 echo ""
 
+# Property-based tests (optional - requires hypothesis)
+echo "=== Property-Based Tests ==="
+echo ""
+
+echo "Running property-based tests..."
+echo "----------------------------------------"
+if python3 -c "import hypothesis" 2>/dev/null; then
+    if python3 tests/test_pbt.py; then
+        echo "✓ Property-based tests passed"
+    else
+        echo "✗ Property-based tests failed"
+        FAILED=1
+    fi
+else
+    echo "⊘ Skipping property-based tests (hypothesis not installed)"
+    echo "  Install with: uv sync --extra test"
+fi
+echo ""
+
 # Integration tests
 echo "=== Integration Tests ==="
 echo ""

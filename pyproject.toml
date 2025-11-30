@@ -32,6 +32,11 @@ dependencies = [
     "click>=8.1.0",
 ]
 
+[project.optional-dependencies]
+test = [
+    "hypothesis>=6.0.0",
+]
+
 [project.urls]
 Homepage = "https://github.com/rewse/enecoq-data-fetcher"
 Repository = "https://github.com/rewse/enecoq-data-fetcher"
