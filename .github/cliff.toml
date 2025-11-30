@@ -4,12 +4,29 @@
 [changelog]
 header = ""
 body = """
-{% for group, commits in commits | group_by(attribute="group") %}
-### {{ group | upper_first }}
-{% for commit in commits %}
+{%- set group_order = [
+  "🚀 New Features",
+  "🐛 Bug Fixes",
+  "⚡ Performance",
+  "🔧 Refactoring",
+  "🧪 Tests",
+  "📚 Documentation",
+  "🎨 Styling",
+  "📦 Build",
+  "⚙️ CI/CD",
+  "🔧 Maintenance"
+] -%}
+{% for group_name in group_order %}
+{%- set group_commits = commits | filter(attribute="group", value=group_name) -%}
+{% if group_commits | length > 0 %}
+### {{ group_name }}
+{% for commit in group_commits %}
 - {{ commit.message | split(pat="\n") | first | trim }}\
 {% endfor %}
-{% endfor %}
+{% endif %}
+{%- endfor %}
+
+**Full Changelog**: https://github.com/rewse/enecoq-data-fetcher/compare/{{ previous.version }}...{{ version }}
 """
 footer = ""
 trim = true
@@ -21,16 +38,16 @@ split_commits = false
 commit_parsers = [
   { message = "^feat", group = "🚀 New Features" },
   { message = "^fix", group = "🐛 Bug Fixes" },
-  { message = "^docs", group = "📚 Documentation" },
   { message = "^perf", group = "⚡ Performance" },
   { message = "^refactor", group = "🔧 Refactoring" },
-  { message = "^style", group = "🎨 Styling" },
   { message = "^test", group = "🧪 Tests" },
+  { message = "^docs", group = "📚 Documentation" },
+  { message = "^style", group = "🎨 Styling" },
+  { message = "^build", group = "📦 Build" },
+  { message = "^ci", group = "⚙️ CI/CD" },
   { message = "^chore\\(release\\)", skip = true },
   { message = "^chore: bump version", skip = true },
-  { message = "^chore", group = "🔧 Maintenance" },
-  { message = "^ci", group = "⚙️ CI/CD" },
-  { message = "^build", group = "📦 Build" },
+  { message = "^chore", group = "🔧 Maintenance"}
 ]
 filter_commits = false
 tag_pattern = "v[0-9].*"
