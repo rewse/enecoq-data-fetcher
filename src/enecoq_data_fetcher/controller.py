@@ -1,9 +1,13 @@
 """Main controller for enecoQ data fetcher."""
 
 import time
+from typing import TYPE_CHECKING
 from typing import Optional
 
 from playwright.sync_api import sync_playwright
+
+if TYPE_CHECKING:
+    from playwright.sync_api import Page
 
 from enecoq_data_fetcher import authenticator
 from enecoq_data_fetcher import config as config_module
@@ -170,7 +174,7 @@ class EnecoQController:
                 # Close browser
                 browser.close()
 
-    def _authenticate_with_retry(self, page: Page) -> None:
+    def _authenticate_with_retry(self, page: "Page") -> None:
         """Authenticate with retry logic for session expiration.
 
         Args:
