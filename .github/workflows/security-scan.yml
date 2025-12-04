@@ -1,0 +1,42 @@
+name: Security Scan
+
+on:
+  push:
+    branches: 
+      - main
+  schedule:
+    - cron: "6 11 * * 3"  # Every Wednesday at 20:06 JST (11:06 UTC)
+
+permissions:
+  actions: read
+  security-events: write
+  contents: read
+
+jobs:
+  security-scan:
+    name: Aikido Safe Chain Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Setup Aikido Safe Chain
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
+
+      - name: Install dependencies with Aikido Safe Chain
+        env:
+          SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS: 96
+        run: uv sync
+
+  osv-scan:
+    name: OSV-Scanner Vulnerability Scan
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.0"
