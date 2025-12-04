@@ -134,11 +134,8 @@ GitHub Actionsワークフローには、OSV-Scannerによる脆弱性スキャ�
 
 ```yaml
 osv-scan:
-  name: OSV-Scanner Vulnerability Scan
   uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.0"
 ```
-
-プルリクエストごとに自動的に実行されます。
 
 #### ローカルでのスキャン
 
