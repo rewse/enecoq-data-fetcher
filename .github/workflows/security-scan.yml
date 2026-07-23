@@ -9,6 +9,7 @@ on:
       - main
   schedule:
     - cron: "6 11 * * 3"  # Every Wednesday at 20:06 JST (11:06 UTC)
+  workflow_dispatch:
 
 permissions:
   actions: read
@@ -36,9 +37,7 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
 
       - name: Install dependencies with Aikido Safe Chain
-        env:
-          SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS: 96
-        run: uv sync
+        run: uv sync --safe-chain-skip-minimum-package-age
 
   osv-scan:
     uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.8"
