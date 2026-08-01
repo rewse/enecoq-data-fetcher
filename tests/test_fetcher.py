@@ -306,6 +306,105 @@ def test_fetch_month_data_error():
     print("✓ Fetch month data error test passed")
 
 
+def _create_mock_frame(url, has_data_marker):
+    """Helper to create a mock frame.
+
+    Args:
+        url: URL of the frame.
+        has_data_marker: Whether the frame contains the enecoQ data marker.
+
+    Returns:
+        Mock frame object.
+    """
+    mock_frame = Mock()
+    mock_frame.url = url
+    
+    def locator_side_effect(selector):
+        mock_locator = Mock()
+        if "img[alt='使用量']" in selector:
+            mock_locator.count.return_value = 1 if has_data_marker else 0
+        else:
+            mock_locator.count.return_value = 0
+        return mock_locator
+    
+    mock_frame.locator.side_effect = locator_side_effect
+    return mock_frame
+
+
+def test_get_enecoq_iframe_found_by_data_marker():
+    """Test iframe lookup returns the frame holding enecoQ data."""
+    mock_page = Mock()
+    weather_frame = _create_mock_frame(
+        "https://ap.otenki.com/index.php", has_data_marker=False
+    )
+    enecoq_frame = _create_mock_frame(
+        "https://ses.me-eco.jp/mini/", has_data_marker=True
+    )
+    mock_page.frames = [Mock(url="https://www.cyberhome.ne.jp/"), weather_frame, enecoq_frame]
+    mock_page.frames[0].locator.side_effect = lambda selector: Mock(
+        count=Mock(return_value=0)
+    )
+    data_fetcher = fetcher.EnecoQDataFetcher(mock_page)
+    
+    result = data_fetcher._get_enecoq_iframe()
+    
+    assert result is enecoq_frame
+    print("✓ Get enecoQ iframe found by data marker test passed")
+
+
+def test_get_enecoq_iframe_no_fallback_to_unrelated_frame():
+    """Test iframe lookup never falls back to an unrelated frame.
+
+    The enecoQ widget is unavailable for a while after the month rollover.
+    Other iframes on the page (e.g. the weather widget) hold unrelated select
+    elements, so returning one of them makes the period selection hang until
+    it times out. An unavailable widget must fail fast instead.
+    """
+    mock_page = Mock()
+    weather_frame = _create_mock_frame(
+        "https://ap.otenki.com/index.php", has_data_marker=False
+    )
+    mock_page.frames = [Mock(url="https://www.cyberhome.ne.jp/"), weather_frame]
+    mock_page.frames[0].locator.side_effect = lambda selector: Mock(
+        count=Mock(return_value=0)
+    )
+    data_fetcher = fetcher.EnecoQDataFetcher(mock_page)
+    
+    try:
+        data_fetcher._get_enecoq_iframe()
+        assert False, "Should have raised FetchError"
+    except exceptions.FetchError as e:
+        assert e.error_code == "IFRAME_NOT_FOUND", (
+            "Unexpected error code: %s" % e.error_code
+        )
+    
+    print("✓ Get enecoQ iframe no fallback to unrelated frame test passed")
+
+
+def test_get_enecoq_iframe_waits_for_late_rendering():
+    """Test iframe lookup waits for the widget to finish rendering."""
+    mock_page = Mock()
+    enecoq_frame = _create_mock_frame(
+        "https://ses.me-eco.jp/mini/", has_data_marker=False
+    )
+    mock_page.frames = [enecoq_frame]
+    
+    # Render the data marker only after the first poll
+    def render_on_wait(_timeout):
+        enecoq_frame.locator.side_effect = lambda selector: Mock(
+            count=Mock(return_value=1)
+        )
+    
+    mock_page.wait_for_timeout.side_effect = render_on_wait
+    data_fetcher = fetcher.EnecoQDataFetcher(mock_page)
+    
+    result = data_fetcher._get_enecoq_iframe()
+    
+    assert result is enecoq_frame
+    assert mock_page.wait_for_timeout.called
+    print("✓ Get enecoQ iframe waits for late rendering test passed")
+
+
 if __name__ == "__main__":
     print("Running fetcher tests...\n")
     
@@ -324,5 +423,8 @@ if __name__ == "__main__":
     test_select_period_error()
     test_fetch_today_data_error()
     test_fetch_month_data_error()
+    test_get_enecoq_iframe_found_by_data_marker()
+    test_get_enecoq_iframe_no_fallback_to_unrelated_frame()
+    test_get_enecoq_iframe_waits_for_late_rendering()
     
     print("\n✓ All fetcher tests passed!")

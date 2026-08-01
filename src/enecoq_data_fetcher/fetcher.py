@@ -21,6 +21,13 @@ class EnecoQDataFetcher:
         page: Playwright page object for browser interaction.
     """
 
+    # Element the enecoQ widget renders once its data is available
+    DATA_MARKER_SELECTOR = "img[alt='使用量']"
+
+    # Time budget for the enecoQ iframe to render its data
+    IFRAME_TIMEOUT_MS = 10000
+    IFRAME_POLL_INTERVAL_MS = 500
+
     def __init__(self, page: Page) -> None:
         """Initialize fetcher with Playwright page.
 
@@ -128,35 +135,45 @@ class EnecoQDataFetcher:
     def _get_enecoq_iframe(self):
         """Get the iframe containing enecoQ data.
 
+        The enecoQ widget is served in its own iframe and is identified by the
+        data marker it renders. Other iframes on the page hold unrelated select
+        elements, so they are never used as a substitute.
+
         Returns:
             Frame object for the enecoQ iframe.
 
         Raises:
-            FetchError: If iframe is not found.
+            FetchError: If the enecoQ iframe is not found.
         """
         try:
             # Wait for iframe to be available
-            self.page.wait_for_selector("iframe", timeout=10000)
-            
-            # Get all iframes
-            frames = self.page.frames
-            
-            # Find the enecoQ iframe (it contains the power data)
-            for frame in frames:
-                # Check if frame contains enecoQ elements
-                if frame.locator("img[alt='使用量']").count() > 0:
-                    self._log.debug("Found enecoQ iframe")
-                    return frame
-            
-            # If not found by content, try to get the first non-main iframe
-            for frame in frames:
-                if frame != self.page.main_frame:
-                    self._log.debug("Using first available iframe")
-                    return frame
-            
+            self.page.wait_for_selector("iframe", timeout=self.IFRAME_TIMEOUT_MS)
+
+            # The widget may still be rendering, so poll until the data marker
+            # shows up
+            waited_ms = 0
+            while True:
+                for frame in self.page.frames:
+                    if frame.locator(self.DATA_MARKER_SELECTOR).count() > 0:
+                        self._log.debug("Found enecoQ iframe: %s", frame.url)
+                        return frame
+
+                if waited_ms >= self.IFRAME_TIMEOUT_MS:
+                    break
+
+                self.page.wait_for_timeout(self.IFRAME_POLL_INTERVAL_MS)
+                waited_ms += self.IFRAME_POLL_INTERVAL_MS
+
+            # The widget is unavailable for a while after the month rollover.
+            # Fail fast so the caller gets an accurate reason instead of a
+            # period selection timeout on an unrelated iframe.
             raise exceptions.FetchError(
-                "enecoQ iframe not found", "IFRAME_NOT_FOUND"
+                "enecoQ iframe not found: no iframe rendered %s within %sms"
+                % (self.DATA_MARKER_SELECTOR, self.IFRAME_TIMEOUT_MS),
+                "IFRAME_NOT_FOUND",
             )
+        except exceptions.FetchError:
+            raise
         except Exception as e:
             self._log.error("Failed to locate iframe: %s", str(e), exc_info=True)
             raise exceptions.FetchError(
