@@ -1,0 +1,2 @@
+# False positives: unittest method names matching the Lob key pattern (live|test)_[a-zA-Z0-9_]{35}
+tests/test_fetcher.py
