@@ -3,6 +3,8 @@
 from datetime import datetime
 from unittest.mock import Mock
 
+from playwright import sync_api
+
 from enecoq_data_fetcher import exceptions
 from enecoq_data_fetcher import fetcher
 from enecoq_data_fetcher import models
@@ -61,7 +63,7 @@ def test_extract_power_usage_success():
     mock_iframe = _create_mock_iframe_with_data("14.50kWh", "0円", "0kg")
     
     # Extract value
-    result = data_fetcher._extract_power_usage(mock_iframe)
+    result = data_fetcher._extract_value(mock_iframe, "使用量")
     
     assert result == 14.50
     print("✓ Extract power usage success test passed")
@@ -78,10 +80,12 @@ def test_extract_power_usage_element_not_found():
     mock_dt.count.return_value = 0
     mock_iframe.locator.return_value = mock_dt
     
-    # Extract value - should return 0.0
-    result = data_fetcher._extract_power_usage(mock_iframe)
-    
-    assert result == 0.0
+    # Missing values are errors, not zero
+    try:
+        data_fetcher._extract_value(mock_iframe, "使用量")
+        assert False, "Should have raised FetchError"
+    except exceptions.FetchError:
+        pass
     print("✓ Extract power usage element not found test passed")
 
 
@@ -100,10 +104,12 @@ def test_extract_power_usage_empty_text():
     mock_dt.locator.return_value = mock_dd
     mock_iframe.locator.return_value = mock_dt
     
-    # Extract value - should return 0.0
-    result = data_fetcher._extract_power_usage(mock_iframe)
-    
-    assert result == 0.0
+    # Missing values are errors, not zero
+    try:
+        data_fetcher._extract_value(mock_iframe, "使用量")
+        assert False, "Should have raised FetchError"
+    except exceptions.FetchError:
+        pass
     print("✓ Extract power usage empty text test passed")
 
 
@@ -117,11 +123,13 @@ def test_extract_power_usage_various_formats():
         ("100kWh", 100.0),
         ("0.5kWh", 0.5),
         ("1234.56 kWh", 1234.56),
+        ("1,234.56kWh", 1234.56),
+        ("0kWh", 0.0),
     ]
     
     for text, expected in test_cases:
         mock_iframe = _create_mock_iframe_with_data(text, "0円", "0kg")
-        result = data_fetcher._extract_power_usage(mock_iframe)
+        result = data_fetcher._extract_value(mock_iframe, "使用量")
         assert result == expected, "Failed for %s" % text
     
     print("✓ Extract power usage various formats test passed")
@@ -136,9 +144,13 @@ def test_extract_power_cost_success():
     mock_iframe = _create_mock_iframe_with_data("0kWh", "542.02円", "0kg")
     
     # Extract value
-    result = data_fetcher._extract_power_cost(mock_iframe)
+    result = data_fetcher._extract_value(mock_iframe, "使用料金")
     
     assert result == 542.02
+    
+    # Thousands separators must not truncate the value
+    mock_iframe = _create_mock_iframe_with_data("0kWh", "12,345円", "0kg")
+    assert data_fetcher._extract_value(mock_iframe, "使用料金") == 12345.0
     print("✓ Extract power cost success test passed")
 
 
@@ -153,10 +165,12 @@ def test_extract_power_cost_element_not_found():
     mock_dt.count.return_value = 0
     mock_iframe.locator.return_value = mock_dt
     
-    # Extract value - should return 0.0
-    result = data_fetcher._extract_power_cost(mock_iframe)
-    
-    assert result == 0.0
+    # Missing values are errors, not zero
+    try:
+        data_fetcher._extract_value(mock_iframe, "使用料金")
+        assert False, "Should have raised FetchError"
+    except exceptions.FetchError:
+        pass
     print("✓ Extract power cost element not found test passed")
 
 
@@ -169,7 +183,7 @@ def test_extract_co2_emission_success():
     mock_iframe = _create_mock_iframe_with_data("0kWh", "0円", "6.53kg")
     
     # Extract value
-    result = data_fetcher._extract_co2_emission(mock_iframe)
+    result = data_fetcher._extract_value(mock_iframe, "CO2")
     
     assert result == 6.53
     print("✓ Extract CO2 emission success test passed")
@@ -186,10 +200,12 @@ def test_extract_co2_emission_element_not_found():
     mock_dt.count.return_value = 0
     mock_iframe.locator.return_value = mock_dt
     
-    # Extract value - should return 0.0
-    result = data_fetcher._extract_co2_emission(mock_iframe)
-    
-    assert result == 0.0
+    # Missing values are errors, not zero
+    try:
+        data_fetcher._extract_value(mock_iframe, "CO2")
+        assert False, "Should have raised FetchError"
+    except exceptions.FetchError:
+        pass
     print("✓ Extract CO2 emission element not found test passed")
 
 
@@ -261,7 +277,7 @@ def test_select_period_error():
     mock_iframe = Mock()
     mock_select = Mock()
     mock_select.first = mock_select
-    mock_select.select_option.side_effect = Exception("Selector error")
+    mock_select.select_option.side_effect = sync_api.Error("Selector error")
     mock_iframe.locator.return_value = mock_select
     
     # Try to select period
@@ -277,7 +293,7 @@ def test_select_period_error():
 def test_fetch_today_data_error():
     """Test today data fetch with error."""
     mock_page = Mock()
-    mock_page.wait_for_selector.side_effect = Exception("Network error")
+    mock_page.wait_for_selector.side_effect = sync_api.Error("Network error")
     data_fetcher = fetcher.EnecoQDataFetcher(mock_page)
     
     # Try to fetch data
@@ -293,7 +309,7 @@ def test_fetch_today_data_error():
 def test_fetch_month_data_error():
     """Test month data fetch with error."""
     mock_page = Mock()
-    mock_page.wait_for_selector.side_effect = Exception("Network error")
+    mock_page.wait_for_selector.side_effect = sync_api.Error("Network error")
     data_fetcher = fetcher.EnecoQDataFetcher(mock_page)
     
     # Try to fetch data
@@ -405,6 +421,66 @@ def test_get_enecoq_iframe_waits_for_late_rendering():
     print("✓ Get enecoQ iframe waits for late rendering test passed")
 
 
+def test_fetch_month_data_success():
+    """Test a full month fetch with separators and a local timestamp."""
+    mock_page = Mock()
+    mock_iframe = _create_mock_iframe_with_data(
+        "1,234.5kWh", "12,345円", "6.53kg"
+    )
+    mock_page.frames = [mock_iframe]
+    data_fetcher = fetcher.EnecoQDataFetcher(mock_page)
+    
+    data = data_fetcher.fetch_month_data()
+    
+    assert data.period == "month"
+    assert data.usage.value == 1234.5
+    assert data.cost.value == 12345.0
+    assert data.co2.value == 6.53
+    assert data.timestamp.utcoffset() is not None
+    assert "+" in data.to_dict()["timestamp"] or "-" in data.to_dict()["timestamp"][19:]
+    print("✓ Fetch month data success test passed")
+
+
+def test_fetch_month_data_placeholder_value():
+    """Test that a placeholder instead of a number fails the fetch."""
+    mock_page = Mock()
+    mock_iframe = _create_mock_iframe_with_data("--kWh", "0円", "0kg")
+    mock_page.frames = [mock_iframe]
+    data_fetcher = fetcher.EnecoQDataFetcher(mock_page)
+    
+    try:
+        data_fetcher.fetch_month_data()
+        assert False, "Should have raised FetchError"
+    except exceptions.FetchError as e:
+        assert "Failed to fetch month's data" in str(e)
+        assert "power usage" in str(e)
+    print("✓ Fetch month data placeholder value test passed")
+
+
+def test_fetch_today_data_missing_value():
+    """Test that a missing value fails the fetch instead of returning 0."""
+    mock_page = Mock()
+    mock_iframe = _create_mock_iframe_with_data("1kWh", "2円", "3kg")
+    base_locator = mock_iframe.locator.side_effect
+    
+    def locator_without_co2(selector):
+        if "img[alt='CO2']" in selector:
+            return Mock(count=Mock(return_value=0))
+        return base_locator(selector)
+    
+    mock_iframe.locator.side_effect = locator_without_co2
+    mock_page.frames = [mock_iframe]
+    data_fetcher = fetcher.EnecoQDataFetcher(mock_page)
+    
+    try:
+        data_fetcher.fetch_today_data()
+        assert False, "Should have raised FetchError"
+    except exceptions.FetchError as e:
+        assert e.error_code == "FETCH_TODAY_ERROR"
+        assert "CO2 emission" in str(e)
+    print("✓ Fetch today data missing value test passed")
+
+
 if __name__ == "__main__":
     print("Running fetcher tests...\n")
     
@@ -426,5 +502,8 @@ if __name__ == "__main__":
     test_get_enecoq_iframe_found_by_data_marker()
     test_get_enecoq_iframe_no_fallback_to_unrelated_frame()
     test_get_enecoq_iframe_waits_for_late_rendering()
+    test_fetch_month_data_success()
+    test_fetch_month_data_placeholder_value()
+    test_fetch_today_data_missing_value()
     
     print("\n✓ All fetcher tests passed!")

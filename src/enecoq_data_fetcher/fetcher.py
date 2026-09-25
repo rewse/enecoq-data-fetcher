@@ -1,9 +1,9 @@
 """Data fetcher component for enecoQ web service."""
 
+import datetime
 import re
-from datetime import datetime
 
-from playwright.sync_api import Page
+from playwright import sync_api
 
 from enecoq_data_fetcher import exceptions
 from enecoq_data_fetcher import logger
@@ -11,14 +11,10 @@ from enecoq_data_fetcher import models
 
 
 class EnecoQDataFetcher:
-    """Fetches and parses power data from enecoQ web service.
-
-    This class handles data retrieval from the enecoQ web interface using
-    Playwright for browser automation. It extracts power usage, cost, and
-    CO2 emission data from the web page.
+    """Fetches and parses power data from the enecoQ widget.
 
     Attributes:
-        page: Playwright page object for browser interaction.
+        page: Playwright page showing the logged-in CYBERHOME portal.
     """
 
     # Element the enecoQ widget renders once its data is available
@@ -28,63 +24,55 @@ class EnecoQDataFetcher:
     IFRAME_TIMEOUT_MS = 10000
     IFRAME_POLL_INTERVAL_MS = 500
 
-    def __init__(self, page: Page) -> None:
+    # Time for the widget to refresh its values after the period changes
+    DATA_UPDATE_WAIT_MS = 2000
+
+    # Labels of the period options in the widget's dropdown
+    PERIOD_LABELS = {"today": "今日", "month": "今月"}
+
+    # English names for the alt text of each value's image, used in messages
+    VALUE_NAMES = {
+        "CO2": "CO2 emission",
+        "使用料金": "power cost",
+        "使用量": "power usage",
+    }
+
+    # Values may carry thousands separators, such as "12,345円".
+    _NUMBER_PATTERN = re.compile(r"\d[\d,]*(?:\.\d+)?")
+
+    def __init__(self, page: sync_api.Page) -> None:
         """Initialize fetcher with Playwright page.
 
         Args:
-            page: Playwright page object for browser interaction.
+            page: Playwright page showing the logged-in portal.
         """
         self.page = page
         self._log = logger.get_logger()
 
     def fetch_today_data(self) -> models.PowerData:
-        """Fetch and parse today's power data.
-
-        Navigates to the enecoQ data page, selects "today" period,
-        and extracts power usage, cost, and CO2 emission data.
+        """Fetch today's power data.
 
         Returns:
             PowerData object containing today's data.
 
         Raises:
-            FetchError: If data retrieval or parsing fails.
+            FetchError: If the data cannot be retrieved or parsed.
         """
-        try:
-            self._log.info("Fetching today's data")
-            return self._fetch_data_for_period("today")
-        except Exception as e:
-            self._log.error(
-                "Failed to fetch today's data: %s", str(e), exc_info=True
-            )
-            raise exceptions.FetchError(
-                "Failed to fetch today's data: %s" % str(e), "FETCH_TODAY_ERROR"
-            ) from e
+        return self._fetch_data_for_period("today")
 
     def fetch_month_data(self) -> models.PowerData:
-        """Fetch and parse this month's power data.
-
-        Navigates to the enecoQ data page, selects "month" period,
-        and extracts power usage, cost, and CO2 emission data.
+        """Fetch this month's power data.
 
         Returns:
             PowerData object containing this month's data.
 
         Raises:
-            FetchError: If data retrieval or parsing fails.
+            FetchError: If the data cannot be retrieved or parsed.
         """
-        try:
-            self._log.info("Fetching month's data")
-            return self._fetch_data_for_period("month")
-        except Exception as e:
-            self._log.error(
-                "Failed to fetch month's data: %s", str(e), exc_info=True
-            )
-            raise exceptions.FetchError(
-                "Failed to fetch month's data: %s" % str(e), "FETCH_MONTH_ERROR"
-            ) from e
+        return self._fetch_data_for_period("month")
 
     def _fetch_data_for_period(self, period: str) -> models.PowerData:
-        """Fetch data for specified period.
+        """Select the period in the widget and read its values.
 
         Args:
             period: Data period ("today" or "month").
@@ -93,260 +81,127 @@ class EnecoQDataFetcher:
             PowerData object containing the requested data.
 
         Raises:
-            FetchError: If data retrieval or parsing fails.
+            FetchError: If the data cannot be retrieved or parsed.
         """
-        # Get iframe containing enecoQ data
-        self._log.debug("Locating enecoQ iframe")
-        iframe = self._get_enecoq_iframe()
-        
-        # Select period from dropdown
-        self._log.debug("Selecting period: %s", period)
-        self._select_period(iframe, period)
-
-        # Wait for data to load
-        self._log.debug("Waiting for data to load")
-        self.page.wait_for_timeout(2000)  # Wait 2 seconds for data to update
-
-        # Extract data from iframe
-        self._log.debug("Extracting power usage data")
-        usage_value = self._extract_power_usage(iframe)
-        self._log.debug("Power usage: %s kWh", usage_value)
-        
-        self._log.debug("Extracting power cost data")
-        cost_value = self._extract_power_cost(iframe)
-        self._log.debug("Power cost: %s JPY", cost_value)
-        
-        self._log.debug("Extracting CO2 emission data")
-        co2_value = self._extract_co2_emission(iframe)
-        self._log.debug("CO2 emission: %s kg", co2_value)
-
-        # Create and return PowerData object
-        power_data = models.PowerData(
-            period=period,
-            timestamp=datetime.now(),
-            usage=models.PowerUsage(value=usage_value),
-            cost=models.PowerCost(value=cost_value),
-            co2=models.CO2Emission(value=co2_value),
-        )
-        
+        self._log.info("Fetching %s data", period)
+        try:
+            iframe = self._get_enecoq_iframe()
+            self._select_period(iframe, period)
+            self.page.wait_for_timeout(self.DATA_UPDATE_WAIT_MS)
+            power_data = models.PowerData(
+                period=period,
+                timestamp=datetime.datetime.now().astimezone(),
+                usage=models.PowerUsage(
+                    value=self._extract_value(iframe, "使用量")
+                ),
+                cost=models.PowerCost(
+                    value=self._extract_value(iframe, "使用料金")
+                ),
+                co2=models.CO2Emission(
+                    value=self._extract_value(iframe, "CO2")
+                ),
+            )
+        except (exceptions.FetchError, sync_api.Error) as e:
+            self._log.error("Failed to fetch %s's data: %s", period, e)
+            raise exceptions.FetchError(
+                "Failed to fetch %s's data: %s" % (period, e),
+                "FETCH_%s_ERROR" % period.upper(),
+            ) from e
         self._log.info("Successfully fetched %s data", period)
         return power_data
 
-    def _get_enecoq_iframe(self):
-        """Get the iframe containing enecoQ data.
+    def _get_enecoq_iframe(self) -> sync_api.Frame:
+        """Get the iframe containing the enecoQ widget.
 
-        The enecoQ widget is served in its own iframe and is identified by the
-        data marker it renders. Other iframes on the page hold unrelated select
-        elements, so they are never used as a substitute.
+        The widget is identified by the data marker it renders. Other iframes
+        on the page hold unrelated select elements, so they are never used as
+        a substitute.
 
         Returns:
-            Frame object for the enecoQ iframe.
+            Frame object for the enecoQ widget.
 
         Raises:
-            FetchError: If the enecoQ iframe is not found.
+            FetchError: If the widget does not render in time.
         """
         try:
-            # Wait for iframe to be available
             self.page.wait_for_selector("iframe", timeout=self.IFRAME_TIMEOUT_MS)
 
-            # The widget may still be rendering, so poll until the data marker
-            # shows up
+            # The widget may still be rendering, so poll for the data marker.
             waited_ms = 0
             while True:
                 for frame in self.page.frames:
                     if frame.locator(self.DATA_MARKER_SELECTOR).count() > 0:
                         self._log.debug("Found enecoQ iframe: %s", frame.url)
                         return frame
-
                 if waited_ms >= self.IFRAME_TIMEOUT_MS:
                     break
-
                 self.page.wait_for_timeout(self.IFRAME_POLL_INTERVAL_MS)
                 waited_ms += self.IFRAME_POLL_INTERVAL_MS
-
-            # The widget is unavailable for a while after the month rollover.
-            # Fail fast so the caller gets an accurate reason instead of a
-            # period selection timeout on an unrelated iframe.
+        except sync_api.Error as e:
             raise exceptions.FetchError(
-                "enecoQ iframe not found: no iframe rendered %s within %sms"
-                % (self.DATA_MARKER_SELECTOR, self.IFRAME_TIMEOUT_MS),
-                "IFRAME_NOT_FOUND",
-            )
-        except exceptions.FetchError:
-            raise
-        except Exception as e:
-            self._log.error("Failed to locate iframe: %s", str(e), exc_info=True)
-            raise exceptions.FetchError(
-                "Failed to locate iframe: %s" % str(e), "IFRAME_ERROR"
+                "Failed to locate iframe: %s" % e, "IFRAME_ERROR"
             ) from e
 
-    def _select_period(self, iframe, period: str) -> None:
-        """Select period from dropdown in iframe.
+        # The widget is unavailable for a while after the month rollover.
+        # Fail fast so the caller gets an accurate reason instead of a period
+        # selection timeout on an unrelated iframe.
+        raise exceptions.FetchError(
+            "enecoQ iframe not found: no iframe rendered %s within %sms"
+            % (self.DATA_MARKER_SELECTOR, self.IFRAME_TIMEOUT_MS),
+            "IFRAME_NOT_FOUND",
+        )
+
+    def _select_period(self, iframe: sync_api.Frame, period: str) -> None:
+        """Select the period in the widget's dropdown.
 
         Args:
-            iframe: Frame object containing the dropdown.
+            iframe: Frame containing the widget.
             period: Data period ("today" or "month").
 
         Raises:
-            FetchError: If period selection fails.
+            FetchError: If the period is invalid or cannot be selected.
         """
-        try:
-            # Locate period dropdown (combobox)
-            combobox = iframe.locator("select").first
-            
-            if period == "today":
-                # Select today option
-                self._log.debug("Selecting 'today' option from dropdown")
-                combobox.select_option(label="今日")
-            elif period == "month":
-                # Select month option
-                self._log.debug("Selecting 'month' option from dropdown")
-                combobox.select_option(label="今月")
-            else:
-                self._log.error("Invalid period: %s", period)
-                raise exceptions.FetchError(
-                    "Invalid period: %s" % period, "INVALID_PERIOD"
-                )
-        except Exception as e:
-            self._log.error("Failed to select period: %s", str(e), exc_info=True)
+        label = self.PERIOD_LABELS.get(period)
+        if label is None:
             raise exceptions.FetchError(
-                "Failed to select period: %s" % str(e), "PERIOD_SELECT_ERROR"
+                "Invalid period: %s" % period, "INVALID_PERIOD"
+            )
+        self._log.debug("Selecting period: %s", period)
+        try:
+            iframe.locator("select").first.select_option(label=label)
+        except sync_api.Error as e:
+            raise exceptions.FetchError(
+                "Failed to select period: %s" % e, "PERIOD_SELECT_ERROR"
             ) from e
 
-    def _extract_power_usage(self, iframe) -> float:
-        """Extract power usage value from iframe.
-
-        Uses CSS selectors and regex to extract numeric value from the iframe.
-        Returns 0.0 if data is not found.
+    def _extract_value(self, iframe: sync_api.Frame, alt: str) -> float:
+        """Read the number shown next to the widget image with the alt text.
 
         Args:
-            iframe: Frame object containing the data.
+            iframe: Frame containing the widget.
+            alt: Alt text of the image that labels the value, such as "使用量".
 
         Returns:
-            Power usage value in kWh.
+            The value without its unit.
+
+        Raises:
+            FetchError: If the value is missing or is not a number.
         """
-        try:
-            # Locate dt element containing the usage image
-            dt_locator = iframe.locator("dt:has(img[alt='使用量'])")
-            
-            # Check if element exists
-            if dt_locator.count() == 0:
-                self._log.warning("Power usage dt element not found")
-                return 0.0
-            
-            # Get the next sibling dd element
-            dd_locator = dt_locator.locator("xpath=following-sibling::dd[1]")
-            
-            if dd_locator.count() == 0:
-                self._log.warning("Power usage dd element not found")
-                return 0.0
+        name = self.VALUE_NAMES.get(alt, alt)
+        dt_locator = iframe.locator("dt:has(img[alt='%s'])" % alt)
+        dd_locator = dt_locator.locator("xpath=following-sibling::dd[1]")
+        if dt_locator.count() == 0 or dd_locator.count() == 0:
+            raise exceptions.FetchError(
+                "Value for %s not found" % name, "VALUE_NOT_FOUND"
+            )
 
-            # Get text content
-            text = dd_locator.first.text_content()
-            if not text:
-                self._log.warning("Power usage text is empty")
-                return 0.0
-
-            # Extract numeric value using regex (e.g., "14.50kWh" -> 14.50)
-            match = re.search(r"(\d+(?:\.\d+)?)", text)
-            if match:
-                return float(match.group(1))
-
-            self._log.warning("Could not extract numeric value from: %s", text)
-            return 0.0
-        except Exception as e:
-            # Return empty value if extraction fails
-            self._log.warning("Power usage extraction failed: %s", e)
-            return 0.0
-
-    def _extract_power_cost(self, iframe) -> float:
-        """Extract power cost value from iframe.
-
-        Uses CSS selectors and regex to extract numeric value from the iframe.
-        Returns 0.0 if data is not found.
-
-        Args:
-            iframe: Frame object containing the data.
-
-        Returns:
-            Power cost value in JPY.
-        """
-        try:
-            # Locate dt element containing the cost image
-            dt_locator = iframe.locator("dt:has(img[alt='使用料金'])")
-            
-            # Check if element exists
-            if dt_locator.count() == 0:
-                self._log.warning("Power cost dt element not found")
-                return 0.0
-            
-            # Get the next sibling dd element
-            dd_locator = dt_locator.locator("xpath=following-sibling::dd[1]")
-            
-            if dd_locator.count() == 0:
-                self._log.warning("Power cost dd element not found")
-                return 0.0
-
-            # Get text content
-            text = dd_locator.first.text_content()
-            if not text:
-                self._log.warning("Power cost text is empty")
-                return 0.0
-
-            # Extract numeric value using regex (e.g., "542.02円" -> 542.02)
-            match = re.search(r"(\d+(?:\.\d+)?)", text)
-            if match:
-                return float(match.group(1))
-
-            self._log.warning("Could not extract numeric value from: %s", text)
-            return 0.0
-        except Exception as e:
-            # Return empty value if extraction fails
-            self._log.warning("Power cost extraction failed: %s", e)
-            return 0.0
-
-    def _extract_co2_emission(self, iframe) -> float:
-        """Extract CO2 emission value from iframe.
-
-        Uses CSS selectors and regex to extract numeric value from the iframe.
-        Returns 0.0 if data is not found.
-
-        Args:
-            iframe: Frame object containing the data.
-
-        Returns:
-            CO2 emission value in kg.
-        """
-        try:
-            # Locate dt element containing the CO2 image
-            dt_locator = iframe.locator("dt:has(img[alt='CO2'])")
-            
-            # Check if element exists
-            if dt_locator.count() == 0:
-                self._log.warning("CO2 emission dt element not found")
-                return 0.0
-            
-            # Get the next sibling dd element
-            dd_locator = dt_locator.locator("xpath=following-sibling::dd[1]")
-            
-            if dd_locator.count() == 0:
-                self._log.warning("CO2 emission dd element not found")
-                return 0.0
-
-            # Get text content
-            text = dd_locator.first.text_content()
-            if not text:
-                self._log.warning("CO2 emission text is empty")
-                return 0.0
-
-            # Extract numeric value using regex (e.g., "6.53kg" -> 6.53)
-            match = re.search(r"(\d+(?:\.\d+)?)", text)
-            if match:
-                return float(match.group(1))
-
-            self._log.warning("Could not extract numeric value from: %s", text)
-            return 0.0
-        except Exception as e:
-            # Return empty value if extraction fails
-            self._log.warning("CO2 emission extraction failed: %s", e)
-            return 0.0
+        text = dd_locator.first.text_content() or ""
+        match = self._NUMBER_PATTERN.search(text)
+        if match is None:
+            raise exceptions.FetchError(
+                "Could not parse %s from %r" % (name, text),
+                "VALUE_PARSE_ERROR",
+            )
+        value = float(match.group(0).replace(",", ""))
+        self._log.debug("Extracted %s: %s", name, value)
+        return value
