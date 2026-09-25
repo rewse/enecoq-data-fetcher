@@ -1,53 +1,44 @@
 # enecoQ Data Fetcher
 
-enecoQ Web Service から電力使用量、電力使用料金、CO2排出量を取得するCLIツールです。
-
-## 概要
-
-enecoQは株式会社ファミリーネットジャパンが提供するCYBERHOMEサービス内の電力データ管理Webサービスです。このツールは、enecoQから電力データをプログラマティックに取得し、JSON形式やコンソール表示で出力します。
-
-## 主な機能
-
-- 電力使用量データの取得
-- 電力使用料金データの取得
-- CO2排出量データの取得
-- 今日または今月のデータ取得
-- JSON形式またはコンソール表示での出力
+enecoQ から電力使用量、電力使用料金、CO2 排出量を取得する CLI ツールです。enecoQ は株式会社ファミリーネットジャパンが提供する CYBERHOME サービス内の電力データ管理 Web サービスで、公開 API がないため、このツールは Playwright でブラウザを操作してデータを取得します。今日または今月のデータを JSON かコンソール表示で出力します。
 
 ## 必要要件
 
 - CYBERHOME（enecoQ）のアカウント
-- Python 3.9以上
+- Python 3.10 以上
 
 ## インストール
 
-### uvxを使用
+どの方法でも、初回に Playwright のブラウザ（Chromium）のインストールが必要です。
 
-インストール不要で直接実行できます。初回のみブラウザのインストールが必要です：
+### uvx
+
+インストールせずに直接実行できます。
 
 ```bash
-# 初回のみ: Playwrightブラウザをインストール
 uvx --from enecoq-data-fetcher playwright install chromium
-
-# 実行
 uvx enecoq-data-fetcher --email your@email.com --password yourpassword
 ```
 
-### uvを使用
+### uv tool
 
 ```bash
-uv tool install enecoq-data-fetcher
+uv tool install --with-executables-from playwright enecoq-data-fetcher
 playwright install chromium
 ```
 
-### pipxを使用
+`--with-executables-from playwright` を付けると、依存パッケージの `playwright` コマンドも PATH に入ります。
+
+### pipx
 
 ```bash
-pipx install enecoq-data-fetcher
+pipx install --include-deps enecoq-data-fetcher
 playwright install chromium
 ```
 
-### pipを使用
+### pip
+
+仮想環境を有効にした状態で実行してください。
 
 ```bash
 pip install enecoq-data-fetcher
@@ -56,58 +47,34 @@ playwright install chromium
 
 ## 使用方法
 
-### 基本的な使い方
-
 ```bash
-# uvxを使用
-uvx enecoq-data-fetcher --email your@email.com --password yourpassword
-
-# uv tool / pipx / pip でインストール済みの場合
 enecoq-data-fetcher --email your@email.com --password yourpassword
 ```
 
-### コマンドライン引数
+uvx の場合は先頭を `uvx enecoq-data-fetcher` に置き換えてください。
 
 | 引数 | 説明 | デフォルト値 | 必須 |
 |------|------|--------------|------|
-| `--email` | CYBERHOME (enecoQ) のメールアドレス | - | ✓ |
-| `--password` | CYBERHOME (enecoQ) のパスワード | - | ✓ |
+| `--email` | CYBERHOME（enecoQ）のメールアドレス | - | ✓ |
+| `--password` | CYBERHOME（enecoQ）のパスワード | - | ✓ |
 | `--period` | データ取得期間（`today` または `month`） | `month` | |
 | `--format` | 出力形式（`json` または `console`） | `json` | |
-| `--output` | JSON出力先ファイルパス | - | |
+| `--output` | JSON 出力先ファイルパス | - | |
 | `--config` | 設定ファイルパス | `config.yaml` | |
 | `--log-level` | ログレベル（`DEBUG`, `INFO`, `WARNING`, `ERROR`） | `INFO` | |
-| `--log-file` | ログファイルパス（指定しない場合はファイル出力なし） | - | |
-
-### 使用例
-
-#### 今月のデータをJSON形式で取得
+| `--log-file` | ログファイルパス | - | |
 
 ```bash
-enecoq-data-fetcher --email your@email.com --password yourpassword --period month --format json
-```
-
-#### 今日のデータをコンソールに表示
-
-```bash
+# 今日のデータをコンソールに表示
 enecoq-data-fetcher --email your@email.com --password yourpassword --period today --format console
-```
 
-#### JSON出力をファイルに保存
-
-```bash
+# 今月のデータを JSON ファイルに保存
 enecoq-data-fetcher --email your@email.com --password yourpassword --output data/power_data.json
-```
-
-#### デバッグモードで実行
-
-```bash
-enecoq-data-fetcher --email your@email.com --password yourpassword --log-level DEBUG
 ```
 
 ## 出力形式
 
-### JSON形式
+### JSON
 
 ```json
 {
@@ -119,12 +86,9 @@ enecoq-data-fetcher --email your@email.com --password yourpassword --log-level D
 }
 ```
 
-注: JSON出力では単位情報は含まれません。単位は以下の通りです：
-- `usage`: kWh（キロワット時）
-- `cost`: JPY（日本円）
-- `co2`: kg（キログラム）
+JSON には単位が含まれません。`usage` は kWh、`cost` は円（JPY）、`co2` は kg です。値は期間の開始からの累計です。
 
-### コンソール形式
+### コンソール
 
 ```
 ==============================
@@ -143,55 +107,43 @@ CO2 Emission: 125.25 kg
 
 ## ログ
 
-デフォルトではコンソールのみにログが出力されます。
-
-ファイルにログを出力したい場合は、`--log-file` オプションを使用してください：
+ログは標準ではコンソールにだけ出力されます。`--log-file` を指定すると、DEBUG レベル以上のログがそのファイルにも記録されます。認証情報はどちらにも記録されません。
 
 ```bash
 enecoq-data-fetcher --email your@email.com --password yourpassword --log-file logs/enecoq.log
 ```
 
-ログファイルにはDEBUGレベル以上のログが記録されます。ログファイルには認証情報は記録されません。
+## 設定ファイル
 
-## 高度な設定（オプション）
-
-`config.yaml` ファイルを作成することで、デフォルト設定をカスタマイズできます：
+カレントディレクトリの `config.yaml`（または `--config` で指定したファイル）でデフォルト設定を変更できます。項目は [config.yaml.example](config.yaml.example) を参照してください。
 
 ```yaml
 log_level: INFO
 log_file: logs/enecoq.log
 timeout: 30
 max_retries: 3
-user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 ```
 
-設定ファイルを使用する場合：
-
-```bash
-enecoq-data-fetcher --email your@email.com --password yourpassword --config config.yaml
-```
-
-注: コマンドライン引数と設定ファイルを同時に設定した場合、コマンドライン引数が優先されます。
+コマンドライン引数と設定ファイルの両方で指定した場合は、コマンドライン引数が優先されます。
 
 ## 他システムとの連携例
 
-### cronでの定期実行
+### cron での定期実行
 
-毎時42分にデータを取得してファイルに保存する例（負荷分散のため0〜60秒のランダム待機）：
+毎時 42 分にデータを取得してファイルに保存する例です。多くの人が同じ時刻にアクセスすると enecoQ のサーバーに負荷がかかるので、42 は 1〜59 の好きな数字に変えてください。さらに 0〜59 秒のランダムな待機を入れています。`$RANDOM` は bash の機能なので、`SHELL=/bin/bash` を指定しています。
 
 ```bash
-# crontabを編集
 crontab -e
+```
 
-# 以下を追加
+```
+SHELL=/bin/bash
 42 * * * * sleep $((RANDOM \% 60)) && enecoq-data-fetcher --email your@email.com --password yourpassword --output /path/to/enecoq_data.json
 ```
 
-注: 負荷分散のため、42を別の数字（59以下の任意の値）に変更することを推奨します。多くのユーザーが同じ時刻にアクセスするとサーバーに負荷がかかるため、0以外のランダムな時刻を選択してください。
+### Home Assistant
 
-### Home Assistantとの連携
-
-cronで定期的に保存したJSONファイルを読み込む方法：
+cron で保存した JSON ファイルを command_line センサーで読み込みます。スクレイピングは cron の 1 回だけで済み、3 つのセンサーは同じファイルを読みます。
 
 ```yaml
 # configuration.yaml
@@ -204,14 +156,14 @@ command_line:
       device_class: energy
       state_class: total_increasing
       icon: mdi:lightning-bolt
-      scan_interval: 300  # 5分ごとに更新
+      scan_interval: 300
   - sensor:
       name: "enecoQ Power Cost"
       command: "cat /config/data/enecoq_data.json"
       value_template: "{{ value_json.cost }}"
       unit_of_measurement: "JPY"
       device_class: monetary
-      state_class: total_increasing
+      state_class: total
       icon: mdi:cash
       scan_interval: 300
   - sensor:
@@ -224,13 +176,11 @@ command_line:
       scan_interval: 300
 ```
 
-注: cronがデータを取得して `/config/data/` に保存し、複数のセンサーがそのファイルを読むことで、スクレイピングの回数を1回で済ませます。
+`monetary` の device class には `total` しか使えないため、料金センサーだけ `state_class` が異なります。
 
-#### Utility Meter で差分を取得
+#### Utility Meter で期間ごとの値を出す
 
-このツールが返す値は累計値です。差分が必要な場合は、Utility Meter を使用してください。
-
-累計値から時間ごとの使用量を計算する例：
+このツールの値は累計なので、1 時間ごとや 1 日ごとの値は Utility Meter で計算します。次の例は 1 時間ごとの電力使用量、料金、CO2 排出量のセンサー（`sensor.enecoq_power_usage_hourly` など）を作ります。
 
 ```yaml
 # configuration.yaml
@@ -246,85 +196,33 @@ utility_meter:
     cycle: hourly
 ```
 
-これにより、以下のセンサーが作成されます：
-- `sensor.enecoq_power_usage_hourly`: 1時間あたりの電力使用量（kWh）
-- `sensor.enecoq_power_cost_hourly`: 1時間あたりの電力使用料金（JPY）
-- `sensor.enecoq_co2_emission_hourly`: 1時間あたりのCO2排出量（kg）
-
-同様の方法で ``--period month`` で取得したデータから日次センサーを作ることもできます。
-
-累計値から日付ごとの使用量を計算する例：
-
-```yaml
-# configuration.yaml
-utility_meter:
-  enecoq_power_usage_daily:
-    source: sensor.enecoq_power_usage
-    cycle: daily
-  enecoq_power_cost_daily:
-    source: sensor.enecoq_power_cost
-    cycle: daily
-  enecoq_co2_emission_daily:
-    source: sensor.enecoq_co2_emission
-    cycle: daily
-```
-
-これにより、以下のセンサーが作成されます：
-- `sensor.enecoq_power_usage_daily`: 1日あたりの電力使用量（kWh）
-- `sensor.enecoq_power_cost_daily`: 1日あたりの電力使用料金（JPY）
-- `sensor.enecoq_co2_emission_daily`: 1日あたりのCO2排出量（kg）
+日ごとの値が欲しい場合は、`--period month` で取得したデータを使い、`cycle: daily` にします。
 
 ## 開発
 
-### テストの実行
-
-#### 全テストの実行
-
 ```bash
-# テストスクリプトを使用（推奨）
+uv sync
+uv run playwright install chromium
 ./tests/run_tests.sh
-```
-
-#### 個別テストの実行
-
-```bash
-# PYTHONPATHを設定して実行
-PYTHONPATH=src uv run python tests/test_exporter.py
-```
-
-詳細なテスト情報は [tests/README.md](tests/README.md) を参照してください。
-
-### パッケージのビルド
-
-```bash
 uv build
 ```
 
+1 つのテストファイルだけを実行するときは `PYTHONPATH=src uv run python tests/test_exporter.py` のように実行します。テストの詳細は [tests/README.md](tests/README.md)、コーディング規約やリリース手順は [AGENTS.md](AGENTS.md) にあります。
+
 ## トラブルシューティング
 
-### Playwrightブラウザがインストールされていない
+### Playwright のブラウザが見つからない
+
+次のようなエラーが出たら、[インストール](#インストール)の手順で Chromium をインストールしてください。
 
 ```
 Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1194/chrome-linux/headless_shell
 ```
 
-このエラーが表示された場合は、Playwrightブラウザをインストールしてください：
+### 認証エラーが出る
 
-```bash
-# uvxを使用している場合
-uvx --from enecoq-data-fetcher playwright install chromium
-
-# uv tool / pipx / pip でインストールしている場合
-playwright install chromium
-```
-
-### 認証エラーが発生する
-
-- メールアドレスとパスワードが正しいか確認してください
-- enecoQ Web Service にブラウザから直接ログインできるか確認してください
+メールアドレスとパスワードが正しいか、ブラウザから enecoQ に直接ログインできるかを確認してください。
 
 ### データが取得できない
 
-- `--log-level DEBUG` オプションを使用して詳細なログを確認してください
-- enecoQ Web Service が利用可能か確認してください
-- ログファイル `logs/enecoq.log` を確認してください
+`--log-level DEBUG` を付けて実行し、詳細なログを確認してください。`--log-file` を指定すればログをファイルに残せます。enecoQ 自体が停止していないかも確認してください。
