@@ -32,7 +32,7 @@
 
 `_extract_power_usage` / `_extract_power_cost` / `_extract_co2_emission` を `_extract_value(iframe, alt)` にまとめる。`dt:has(img[alt='...'])` の直後の `dd` のテキストからカンマを除いて数値を読み、要素がない、テキストが空、数値が読めない場合は `FetchError` を投げる。
 
-`fetch_today_data` / `fetch_month_data` は、すでに `FetchError` の例外を包み直さない。ブラウザのエラーは `FetchError` に包んで元の例外を `from` でつなぎ、エラーログは 1 回だけ出す。取得時刻は `datetime.now().astimezone()` とする。
+内側の処理（iframe の特定、期間の選択、値の抽出）は `FetchError` を投げるだけでログに `exc_info` を出さない。`fetch_today_data` / `fetch_month_data` は `FetchError` と `sync_api.Error` を「Failed to fetch today's data: ...」のような期間ごとの `FetchError` に 1 回だけ包み、元の例外を `from` でつなぎ、エラーログもここで 1 回だけ出す。エラーメッセージの値の名前は英語（power usage など）にする。取得時刻は `datetime.datetime.now().astimezone()` とする。
 
 ### controller
 
@@ -70,7 +70,7 @@ flowchart TD
 
 ### logger
 
-キーワードで伏せる今の方式をやめ、`setup_logger(log_level, log_file, secrets)` で受け取った実際の値を伏せる。`SensitiveDataFilter(secrets)` は整形後のメッセージに秘密の値が含まれていれば `****` に置き換え、`record.msg` を置き換えた文字列、`record.args` を空にする。フィルターは各ハンドラーに付け、`setup_logger` を呼ぶたびにハンドラーごと作り直すので重複しない。コンソールのハンドラーは標準エラー出力のままとし、JSON の標準出力と混ざらないようにする。
+キーワードで伏せる今の方式をやめ、`setup_logger(log_level, log_file, secrets)` で受け取った実際の値を伏せる。`SensitiveDataFilter(secrets)` は整形後のメッセージに秘密の値が含まれていれば `****` に置き換え、`record.msg` を置き換えた文字列、`record.args` を空にする。フィルターは logger に付け、`setup_logger` を呼ぶたびに既存のハンドラーとフィルターを外して作り直すので重複しない。コンソールのハンドラーは標準エラー出力のままとし、JSON の標準出力と混ざらないようにする。
 
 ### exporter と models
 
@@ -96,7 +96,7 @@ exporter は `except (OSError, IOError)` を `except OSError` にまとめる程
 - JSON の `timestamp` に UTC オフセットが付くこと
 - `sync_api.Error` ではリトライされ、`AuthenticationError` ではリトライされないこと、試行回数が `max_retries + 1` であること
 - `user_agent` が `new_context` に渡されること
-- `bump_version.sh` を一時的な git リポジトリ（ローカルの bare リポジトリを `origin` にする）で動かし、事前確認での中断と、他のステージ済みファイルがコミットに含まれないことを確かめる
+- `bump_version.sh` を一時的な git リポジトリ（ローカルの bare リポジトリを `origin` にする）で動かし、バージョンの更新、`--push` での送信、事前確認のそれぞれで中断すること（他のステージ済みファイルや未追跡ファイルがあるときも中断する）を確かめる
 
 すべて `./tests/run_tests.sh` から実行できるようにし、実装後に `osv-scanner --lockfile=uv.lock` も実行する。
 
