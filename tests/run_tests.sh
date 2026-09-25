@@ -1,172 +1,69 @@
 #!/bin/bash
+# Runs every test file and reports which suites failed.
+#
+# Each test file runs its own tests from its __main__ block, so a suite
+# passes exactly when its python process exits with status 0.
 
-# Test runner script for enecoQ Data Fetcher
-# This script runs all test suites and reports results
+set -uo pipefail
 
-set -e  # Exit on error
+cd "$(dirname "$0")/.."
+# shellcheck source=/dev/null
+source .venv/bin/activate
+export PYTHONPATH=src
+
+failed_suites=()
+
+run_suite() {
+  local name="$1"
+  local file="$2"
+  echo "Running $name tests..."
+  echo "----------------------------------------"
+  if python3 "$file"; then
+    echo "✓ $name tests passed"
+  else
+    echo "✗ $name tests failed"
+    failed_suites+=("$name")
+  fi
+  echo ""
+}
 
 echo "========================================"
 echo "enecoQ Data Fetcher - Test Suite"
 echo "========================================"
 echo ""
 
-# Move to project root
-cd "$(dirname "$0")/.."
-
-# Activate virtual environment
-source .venv/bin/activate
-
-# Set PYTHONPATH
-export PYTHONPATH=src
-
-# Track test results
-FAILED=0
-
-# Unit tests
 echo "=== Unit Tests ==="
 echo ""
+run_suite "Models" tests/test_models.py
+run_suite "Exceptions" tests/test_exceptions.py
+run_suite "Authenticator" tests/test_authenticator.py
+run_suite "Fetcher" tests/test_fetcher.py
+run_suite "Config" tests/test_config.py
+run_suite "Exporter" tests/test_exporter.py
+run_suite "Logger" tests/test_logger.py
+run_suite "CLI" tests/test_cli.py
 
-# Run models tests
-echo "Running models tests..."
-echo "----------------------------------------"
-if python3 tests/test_models.py; then
-    echo "✓ Models tests passed"
-else
-    echo "✗ Models tests failed"
-    FAILED=1
-fi
-echo ""
-
-# Run exceptions tests
-echo "Running exceptions tests..."
-echo "----------------------------------------"
-if python3 tests/test_exceptions.py; then
-    echo "✓ Exceptions tests passed"
-else
-    echo "✗ Exceptions tests failed"
-    FAILED=1
-fi
-echo ""
-
-# Run authenticator tests
-echo "Running authenticator tests..."
-echo "----------------------------------------"
-if python3 tests/test_authenticator.py 2>&1 | grep -v "Traceback" | grep -v "File \"" | grep -v "raise" | grep -v "Exception:"; then
-    echo "✓ Authenticator tests passed"
-else
-    echo "✗ Authenticator tests failed"
-    FAILED=1
-fi
-echo ""
-
-# Run fetcher tests
-echo "Running fetcher tests..."
-echo "----------------------------------------"
-if python3 tests/test_fetcher.py 2>&1 | grep -v "Traceback" | grep -v "File \"" | grep -v "raise" | grep -v "Exception:"; then
-    echo "✓ Fetcher tests passed"
-else
-    echo "✗ Fetcher tests failed"
-    FAILED=1
-fi
-echo ""
-
-# Run config tests
-echo "Running config tests..."
-echo "----------------------------------------"
-if python3 tests/test_config.py; then
-    echo "✓ Config tests passed"
-else
-    echo "✗ Config tests failed"
-    FAILED=1
-fi
-echo ""
-
-# Run exporter tests
-echo "Running exporter tests..."
-echo "----------------------------------------"
-if python3 tests/test_exporter.py; then
-    echo "✓ Exporter tests passed"
-else
-    echo "✗ Exporter tests failed"
-    FAILED=1
-fi
-echo ""
-
-# Run logger tests
-echo "Running logger tests..."
-echo "----------------------------------------"
-if python3 tests/test_logger.py; then
-    echo "✓ Logger tests passed"
-else
-    echo "✗ Logger tests failed"
-    FAILED=1
-fi
-echo ""
-
-# Run CLI tests
-echo "Running CLI tests..."
-echo "----------------------------------------"
-if python3 tests/test_cli.py; then
-    echo "✓ CLI tests passed"
-else
-    echo "✗ CLI tests failed"
-    FAILED=1
-fi
-echo ""
-
-# Property-based tests (optional - requires hypothesis)
 echo "=== Property-Based Tests ==="
 echo ""
-
-echo "Running property-based tests..."
-echo "----------------------------------------"
 if python3 -c "import hypothesis" 2>/dev/null; then
-    if python3 tests/test_pbt.py; then
-        echo "✓ Property-based tests passed"
-    else
-        echo "✗ Property-based tests failed"
-        FAILED=1
-    fi
+  run_suite "Property-based" tests/test_pbt.py
 else
-    echo "⊘ Skipping property-based tests (hypothesis not installed)"
-    echo "  Install with: uv sync --extra test"
+  echo "⊘ Skipping property-based tests (hypothesis not installed)"
+  echo "  Install with: uv sync --extra test"
+  echo ""
 fi
-echo ""
 
-# Integration tests
 echo "=== Integration Tests ==="
 echo ""
+run_suite "Logging integration" tests/test_logging_integration.py
+run_suite "Integration" tests/test_integration.py
 
-# Run logging integration tests
-echo "Running logging integration tests..."
-echo "----------------------------------------"
-if python3 tests/test_logging_integration.py; then
-    echo "✓ Logging integration tests passed"
-else
-    echo "✗ Logging integration tests failed"
-    FAILED=1
-fi
-echo ""
-
-# Run integration tests
-echo "Running integration tests..."
-echo "----------------------------------------"
-if python3 tests/test_integration.py 2>&1 | grep -v "Logging error" | grep -v "ValueError: I/O operation"; then
-    echo "✓ Integration tests passed"
-else
-    echo "✗ Integration tests failed"
-    FAILED=1
-fi
-echo ""
-
-# Summary
 echo "========================================"
-if [ $FAILED -eq 0 ]; then
-    echo "✓ All test suites passed!"
-    echo "========================================"
-    exit 0
-else
-    echo "✗ Some tests failed"
-    echo "========================================"
-    exit 1
+if [[ ${#failed_suites[@]} -eq 0 ]]; then
+  echo "✓ All test suites passed!"
+  echo "========================================"
+  exit 0
 fi
+echo "✗ Failed suites: ${failed_suites[*]}"
+echo "========================================"
+exit 1
