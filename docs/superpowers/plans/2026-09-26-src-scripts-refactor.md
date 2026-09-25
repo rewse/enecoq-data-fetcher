@@ -4,7 +4,7 @@
 
 **Goal:** `src/enecoq_data_fetcher/` と `scripts/` のバグを直し、重複と未使用コードを整理する。
 
-**Architecture:** モジュール構成（`cli` → `controller` → `authenticator` / `fetcher` → `exporter`、補助の `config` / `logger` / `models` / `exceptions`）は変えず、各モジュールの中身を直す。依存の少ない `config` と `logger` から始め、`authenticator` → `fetcher` → `controller` → `cli` の順に進め、最後にリリーススクリプトとドキュメントを直す。
+**Architecture:** モジュール構成（`cli` → `controller` → `authenticator` / `fetcher` → `exporter`、補助の `config` / `logger` / `models` / `exceptions`）は変えず、各モジュールの中身を直す。依存の少ない `config` と `logger` から始め、`authenticator` → `fetcher` → `controller` → `cli` の順に進め、最後にテストランナー、リリーススクリプト、ドキュメントを直す。
 
 **Tech Stack:** Python 3.10 以上、Click、Playwright（`playwright.sync_api`）、PyYAML、uv、bash
 
@@ -247,7 +247,7 @@ git commit -m "fix(config): validate config files and require PyYAML" -m "PyYAML
 
 - [ ] **Step 1: 失敗するテストを書く**
 
-`tests/test_logger.py` の `test_sensitive_data_filter` を削除し、同じ位置に次を追加する。`if __name__ == "__main__":` ブロックの `test_sensitive_data_filter()` も新しい 4 関数の呼び出しに置き換える。
+`tests/test_logger.py` の `test_sensitive_data_filter` を削除し、同じ位置に次を追加する。`if __name__ == "__main__":` ブロックの `test_sensitive_data_filter()` も新しい 5 関数の呼び出しに置き換える。
 
 ```python
 def test_sensitive_data_filter_masks_secret_in_args():
@@ -315,7 +315,24 @@ def test_setup_logger_does_not_duplicate_filters():
     assert len(log.handlers) == 1
     
     print("✓ test_setup_logger_does_not_duplicate_filters passed")
+
+
+def test_console_handler_follows_current_stderr():
+    """Test that console logs go to sys.stderr as it is when emitting."""
+    log = logger.setup_logger()
+    original_stderr = sys.stderr
+    replaced = io.StringIO()
+    try:
+        sys.stderr = replaced
+        log.warning("After replacing stderr")
+    finally:
+        sys.stderr = original_stderr
+    
+    assert "After replacing stderr" in replaced.getvalue()
+    print("✓ test_console_handler_follows_current_stderr passed")
 ```
+
+`tests/test_logger.py` の import に `import io` と `import sys` を追加する（標準ライブラリの import を辞書順に並べる）。
 
 - [ ] **Step 2: テストが失敗することを確認する**
 
@@ -329,6 +346,7 @@ Expected: FAIL（`test_sensitive_data_filter_masks_secret_in_args` で `Assertio
 
 import logging
 import pathlib
+import sys
 from collections.abc import Iterable
 from typing import Optional
 
@@ -336,6 +354,28 @@ LOGGER_NAME = "enecoq_data_fetcher"
 
 # Replacement for secret values in log messages
 MASK = "****"
+
+
+class _StderrHandler(logging.StreamHandler):
+    """Writes to sys.stderr as it is at emit time.
+
+    A plain StreamHandler keeps the stream it was created with, so after
+    sys.stderr is replaced (as click.testing.CliRunner does) it writes to a
+    closed stream.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the handler."""
+        super().__init__(sys.stderr)
+
+    @property
+    def stream(self):
+        """Return the current sys.stderr."""
+        return sys.stderr
+
+    @stream.setter
+    def stream(self, value) -> None:
+        """Ignore assignments; the stream is always sys.stderr."""
 
 
 class SensitiveDataFilter(logging.Filter):
@@ -405,7 +445,7 @@ def setup_logger(
     log.addFilter(SensitiveDataFilter(secrets))
 
     # Logs go to stderr so they never mix with JSON on stdout.
-    console_handler = logging.StreamHandler()
+    console_handler = _StderrHandler()
     console_handler.setLevel(getattr(logging, log_level.upper(), logging.INFO))
     console_handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
     log.addHandler(console_handler)
@@ -443,7 +483,7 @@ Expected: PASS（`All logger tests passed!` と `All integration tests passed!`�
 
 ```bash
 git add src/enecoq_data_fetcher/logger.py tests/test_logger.py
-git commit -m "fix(logger): mask actual secret values instead of keywords" -m "The keyword filter missed secrets passed as format arguments and could break formatting by rewriting the format string. It also added a new filter on every setup call. The filter now masks the given secret values in the formatted message and is replaced on each setup."
+git commit -m "fix(logger): mask actual secret values instead of keywords" -m "The keyword filter missed secrets passed as format arguments and could break formatting by rewriting the format string. It also added a new filter on every setup call. The filter now masks the given secret values in the formatted message and is replaced on each setup. The console handler follows the current sys.stderr, so it no longer writes to a closed stream after a test runner swaps stderr."
 ```
 
 ---
@@ -1726,13 +1766,122 @@ git commit -m "fix(cli): report config errors and mask the password in logs" -m 
 
 ---
 
-### Task 7: リリーススクリプトの事前確認
+### Task 7: テストランナーの合否判定
+
+**Files:**
+- Modify: `tests/run_tests.sh`（全体を置き換え）
+
+**Interfaces:**
+- Produces: `run_suite <name> <file>` 関数。Task 8 はこれで新しいテストを登録する
+- 1 つでも失敗したら終了コード 1、すべて成功なら 0
+
+- [ ] **Step 1: 失敗を見逃すことを確認する**
+
+`grep` を通したパイプラインの終了ステータスは `grep` のものになるので、Python が失敗しても成功扱いになる。
+
+Run: `command cp tests/test_fetcher.py /tmp/test_fetcher.py.bak && printf '\nraise SystemExit(1)\n' >> tests/test_fetcher.py; ./tests/run_tests.sh 2>&1 | grep -E "Fetcher tests|All test suites"; command cp /tmp/test_fetcher.py.bak tests/test_fetcher.py`
+Expected: `✓ Fetcher tests passed`（本来は失敗であるべき）
+
+- [ ] **Step 2: `tests/run_tests.sh` を置き換える**
+
+```bash
+#!/bin/bash
+# Runs every test file and reports which suites failed.
+#
+# Each test file runs its own tests from its __main__ block, so a suite
+# passes exactly when its python process exits with status 0.
+
+set -uo pipefail
+
+cd "$(dirname "$0")/.."
+# shellcheck source=/dev/null
+source .venv/bin/activate
+export PYTHONPATH=src
+
+failed_suites=()
+
+run_suite() {
+  local name="$1"
+  local file="$2"
+  echo "Running $name tests..."
+  echo "----------------------------------------"
+  if python3 "$file"; then
+    echo "✓ $name tests passed"
+  else
+    echo "✗ $name tests failed"
+    failed_suites+=("$name")
+  fi
+  echo ""
+}
+
+echo "========================================"
+echo "enecoQ Data Fetcher - Test Suite"
+echo "========================================"
+echo ""
+
+echo "=== Unit Tests ==="
+echo ""
+run_suite "Models" tests/test_models.py
+run_suite "Exceptions" tests/test_exceptions.py
+run_suite "Authenticator" tests/test_authenticator.py
+run_suite "Fetcher" tests/test_fetcher.py
+run_suite "Config" tests/test_config.py
+run_suite "Exporter" tests/test_exporter.py
+run_suite "Logger" tests/test_logger.py
+run_suite "CLI" tests/test_cli.py
+
+echo "=== Property-Based Tests ==="
+echo ""
+if python3 -c "import hypothesis" 2>/dev/null; then
+  run_suite "Property-based" tests/test_pbt.py
+else
+  echo "⊘ Skipping property-based tests (hypothesis not installed)"
+  echo "  Install with: uv sync --extra test"
+  echo ""
+fi
+
+echo "=== Integration Tests ==="
+echo ""
+run_suite "Logging integration" tests/test_logging_integration.py
+run_suite "Integration" tests/test_integration.py
+
+echo "========================================"
+if [[ ${#failed_suites[@]} -eq 0 ]]; then
+  echo "✓ All test suites passed!"
+  echo "========================================"
+  exit 0
+fi
+echo "✗ Failed suites: ${failed_suites[*]}"
+echo "========================================"
+exit 1
+```
+
+- [ ] **Step 3: 失敗が検出されることを確認する**
+
+Run: `command cp tests/test_fetcher.py /tmp/test_fetcher.py.bak && printf '\nraise SystemExit(1)\n' >> tests/test_fetcher.py; ./tests/run_tests.sh > /tmp/run_tests.log 2>&1; echo "exit=$?"; grep -E "Fetcher tests|Failed suites" /tmp/run_tests.log; command cp /tmp/test_fetcher.py.bak tests/test_fetcher.py`
+Expected: `exit=1`、`✗ Fetcher tests failed`、`✗ Failed suites: Fetcher`
+
+- [ ] **Step 4: 通常の実行で全体が通り、ログのエラーが出ないことを確認する**
+
+Run: `./tests/run_tests.sh > /tmp/run_tests.log 2>&1; echo "exit=$?"; grep -c -E "Logging error|I/O operation on closed file" /tmp/run_tests.log`
+Expected: `exit=0` と `0`（Task 2 のハンドラー修正により、以前 `grep` で隠していたログのエラーが出ない）
+
+- [ ] **Step 5: コミットする**
+
+```bash
+git add tests/run_tests.sh
+git commit -m "test: make run_tests.sh fail when a suite fails" -m "Three suites were piped through grep to hide noise, so their status came from grep and failures were reported as passes. The noise came from a logger handler holding a closed stderr, which the logger now avoids, so the pipes are removed and each suite is judged by its own exit status."
+```
+
+---
+
+### Task 8: リリーススクリプトの事前確認
 
 **Files:**
 - Modify: `scripts/bump_version.sh`（全体を置き換え）
 - Modify: `Makefile`
 - Create: `tests/test_bump_version.py`
-- Modify: `tests/run_tests.sh`（CLI テストのブロックの後に追加）
+- Modify: `tests/run_tests.sh`（Task 7 の `run_suite` で登録）
 
 **Interfaces:**
 - Produces: `scripts/bump_version.sh {major|minor|patch} [--push]`。成功時は `chore: bump version to X.Y.Z` のコミットとタグ `vX.Y.Z` を作り、`--push` 時は `git push --atomic origin main refs/tags/vX.Y.Z`。事前確認に失敗したら終了コード 1 で何も変更しない
@@ -2063,19 +2212,10 @@ Expected: PASS（`✓ All bump_version tests passed!`、構文エラーなし）
 
 - [ ] **Step 6: `tests/run_tests.sh` にテストを登録する**
 
-`tests/run_tests.sh` の CLI テストのブロック（`echo "✓ CLI tests passed"` を含む `if` と、その後の `echo ""`）の直後に次を追加する。
+`tests/run_tests.sh` の `run_suite "CLI" tests/test_cli.py` の次の行に追加する。
 
 ```bash
-# Run release script tests
-echo "Running release script tests..."
-echo "----------------------------------------"
-if python3 tests/test_bump_version.py; then
-    echo "✓ Release script tests passed"
-else
-    echo "✗ Release script tests failed"
-    FAILED=1
-fi
-echo ""
+run_suite "Release script" tests/test_bump_version.py
 ```
 
 Run: `./tests/run_tests.sh 2>&1 | grep "Release script"`
@@ -2090,14 +2230,14 @@ git commit -m "fix(release): check repository state before bumping the version" 
 
 ---
 
-### Task 8: ドキュメントと全体の確認
+### Task 9: ドキュメントと全体の確認
 
 **Files:**
 - Modify: `README.md`（JSON 出力例、設定ファイルの説明）
 - Modify: `AGENTS.md`（リリースの説明）
 
 **Interfaces:**
-- Consumes: Task 1〜7 の変更後の挙動
+- Consumes: Task 1〜8 の変更後の挙動
 
 - [ ] **Step 1: README の JSON 例を直す**
 
@@ -2132,10 +2272,7 @@ JSON には単位が含まれません。`usage` は kWh、`cost` は円（JPY�
 - [ ] **Step 4: 全テストと脆弱性スキャンを実行する**
 
 Run: `./tests/run_tests.sh 2>&1 | tail -15`
-Expected: すべてのブロックが `✓ ... passed` で、最後に失敗の報告がない
-
-Run: `for t in tests/test_*.py; do PYTHONPATH=src uv run python "$t" >/dev/null 2>&1 || echo "FAIL: $t"; done`
-Expected: 何も表示されない（`run_tests.sh` は一部のテストの出力を `grep` に通しており、その終了ステータスで判定するため、個別にも確認する）
+Expected: 最後に `✓ All test suites passed!`（終了コード 0）
 
 Run: `osv-scanner --lockfile=uv.lock`
 Expected: `No issues found`
