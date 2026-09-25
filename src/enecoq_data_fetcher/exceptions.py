@@ -38,7 +38,9 @@ class AuthenticationError(EnecoQError):
     """
 
     def __init__(
-        self, message: str = "Authentication failed", error_code: str = "AUTH_ERROR"
+        self,
+        message: str = "Authentication failed",
+        error_code: str = "AUTH_ERROR",
     ) -> None:
         """Initialize the authentication error.
 
@@ -57,7 +59,9 @@ class FetchError(EnecoQError):
     """
 
     def __init__(
-        self, message: str = "Data fetch failed", error_code: str = "FETCH_ERROR"
+        self,
+        message: str = "Data fetch failed",
+        error_code: str = "FETCH_ERROR",
     ) -> None:
         """Initialize the fetch error.
 
@@ -76,7 +80,9 @@ class ExportError(EnecoQError):
     """
 
     def __init__(
-        self, message: str = "Data export failed", error_code: str = "EXPORT_ERROR"
+        self,
+        message: str = "Data export failed",
+        error_code: str = "EXPORT_ERROR",
     ) -> None:
         """Initialize the export error.
 

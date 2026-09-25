@@ -2,6 +2,8 @@
 
 from unittest.mock import Mock
 
+from playwright import sync_api
+
 from enecoq_data_fetcher import authenticator
 from enecoq_data_fetcher import exceptions
 
@@ -16,19 +18,6 @@ def test_authenticator_initialization():
     assert auth._email == "test@example.com"
     assert auth._password == "test123"
     print("✓ Authenticator initialization test passed")
-
-
-def test_authenticator_with_user_agent():
-    """Test authenticator initialization with custom user agent."""
-    custom_ua = "Custom User Agent"
-    auth = authenticator.EnecoQAuthenticator(
-        email="test@example.com",
-        password="test123",
-        user_agent=custom_ua
-    )
-    
-    assert auth._user_agent == custom_ua
-    print("✓ Authenticator with user agent test passed")
 
 
 def test_login_success():
@@ -191,19 +180,46 @@ def test_login_unexpected_error():
         password="test123"
     )
     
-    # Create mock page that raises exception
+    # Create mock page that raises a browser error
     mock_page = Mock()
-    mock_page.goto.side_effect = Exception("Network error")
+    mock_page.goto.side_effect = sync_api.Error("Network error")
     
-    # Execute login and expect wrapped error
+    # Browser errors propagate unwrapped so the controller can retry them
     try:
         auth.login(mock_page)
-        assert False, "Should have raised AuthenticationError"
-    except exceptions.AuthenticationError as e:
-        assert "unexpected error" in str(e)
+        assert False, "Should have raised playwright Error"
+    except exceptions.AuthenticationError:
+        assert False, "Browser errors must not become AuthenticationError"
+    except sync_api.Error as e:
         assert "Network error" in str(e)
     
     print("✓ Login unexpected error test passed")
+
+
+def test_login_timeout_propagates():
+    """Test that a timeout after submitting propagates for a retry."""
+    auth = authenticator.EnecoQAuthenticator(
+        email="test@example.com",
+        password="test123"
+    )
+    
+    mock_page = Mock()
+    mock_email_input = Mock()
+    mock_email_input.is_visible.return_value = True
+    mock_page.locator.return_value = mock_email_input
+    mock_page.wait_for_load_state.side_effect = sync_api.TimeoutError(
+        "Timeout 30000ms exceeded"
+    )
+    
+    try:
+        auth.login(mock_page)
+        assert False, "Should have raised playwright TimeoutError"
+    except exceptions.AuthenticationError:
+        assert False, "Timeouts must not become AuthenticationError"
+    except sync_api.TimeoutError:
+        pass
+    
+    print("✓ Login timeout propagates test passed")
 
 
 def test_is_logged_in_true():
@@ -255,7 +271,7 @@ def test_is_logged_in_error():
     
     # Create mock page that raises exception
     mock_page = Mock()
-    mock_page.locator.side_effect = Exception("Page error")
+    mock_page.locator.side_effect = sync_api.Error("Page error")
     
     # Check login status - should return False on error
     result = auth.is_logged_in(mock_page)
@@ -283,12 +299,12 @@ if __name__ == "__main__":
     print("Running authenticator tests...\n")
     
     test_authenticator_initialization()
-    test_authenticator_with_user_agent()
     test_login_success()
     test_login_form_not_found()
     test_login_authentication_failed()
     test_login_with_error_message()
     test_login_unexpected_error()
+    test_login_timeout_propagates()
     test_is_logged_in_true()
     test_is_logged_in_false()
     test_is_logged_in_error()
