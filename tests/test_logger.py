@@ -181,6 +181,26 @@ def test_logging_integration():
         print("✓ test_logging_integration passed")
 
 
+def test_setup_logger_masks_secrets_in_traceback():
+    """Test that a secret in an exception's traceback is masked in the file."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_file = os.path.join(tmpdir, "traceback.log")
+        log = logger.setup_logger(log_file=log_file, secrets=["hunter2"])
+        
+        try:
+            raise RuntimeError("bad password hunter2")
+        except RuntimeError:
+            log.error("Unexpected error", exc_info=True)
+        for handler in log.handlers:
+            handler.flush()
+        
+        content = Path(log_file).read_text()
+        assert "hunter2" not in content, content
+        assert "RuntimeError: bad password ****" in content
+    
+    print("✓ test_setup_logger_masks_secrets_in_traceback passed")
+
+
 if __name__ == "__main__":
     test_setup_logger_default()
     test_setup_logger_custom_level()
@@ -191,6 +211,7 @@ if __name__ == "__main__":
     test_setup_logger_masks_secrets_in_file()
     test_setup_logger_does_not_duplicate_filters()
     test_console_handler_follows_current_stderr()
+    test_setup_logger_masks_secrets_in_traceback()
     test_logging_integration()
     
     print("\nAll logger tests passed!")

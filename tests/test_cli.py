@@ -407,6 +407,29 @@ def test_cli_reports_argument_error_once():
     print("✓ CLI reports argument error once")
 
 
+@patch("enecoq_data_fetcher.cli.controller.EnecoQController")
+def test_cli_masks_password_in_error_output(mock_controller_class):
+    """Test that the password never reaches the error message on stderr."""
+    mock_controller_class.return_value.fetch_power_data.side_effect = (
+        RuntimeError("Page echoed hunter2-secret back")
+    )
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli.main, [
+            "--email", "test@example.com",
+            "--password", "hunter2-secret",
+            "--log-file", "run.log",
+        ])
+        with open("run.log", encoding="utf-8") as f:
+            content = f.read()
+    
+    assert result.exit_code == 5, result.output
+    assert "hunter2-secret" not in result.output, result.output
+    assert "Unexpected error: Page echoed **** back" in result.output
+    assert "hunter2-secret" not in content, content
+    print("✓ CLI masks password in error output")
+
+
 if __name__ == "__main__":
     test_cli_help()
     test_cli_missing_required_args()
@@ -427,4 +450,5 @@ if __name__ == "__main__":
     test_cli_uses_defaults_without_config()
     test_cli_masks_password_in_log_file()
     test_cli_reports_argument_error_once()
+    test_cli_masks_password_in_error_output()
     print("\nAll CLI tests passed!")

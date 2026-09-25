@@ -110,13 +110,14 @@ def main(
         $ enecoq-data-fetcher --email user@example.com --password secret --config /path/to/config.yaml
     """
     log = None
+    secrets = [password]
     try:
         _validate_arguments(email, password, output_format, output_path)
         config = _load_config(config_path, log_level, log_file)
         log = logger.setup_logger(
             log_level=config.log_level,
             log_file=config.log_file,
-            secrets=[password],
+            secrets=secrets,
         )
         log.info(
             "Starting enecoQ data fetcher at %s",
@@ -149,19 +150,22 @@ def main(
         )
 
     except click.BadParameter as e:
-        _fail(log, "Invalid argument: %s" % e.message, EXIT_INVALID_ARGUMENT)
+        _fail(
+            log, secrets, "Invalid argument: %s" % e.message,
+            EXIT_INVALID_ARGUMENT,
+        )
     except exceptions.AuthenticationError as e:
-        _fail(log, "Authentication error: %s" % e, EXIT_AUTH_ERROR)
+        _fail(log, secrets, "Authentication error: %s" % e, EXIT_AUTH_ERROR)
     except exceptions.FetchError as e:
-        _fail(log, "Fetch error: %s" % e, EXIT_FETCH_ERROR)
+        _fail(log, secrets, "Fetch error: %s" % e, EXIT_FETCH_ERROR)
     except exceptions.ExportError as e:
-        _fail(log, "Export error: %s" % e, EXIT_EXPORT_ERROR)
+        _fail(log, secrets, "Export error: %s" % e, EXIT_EXPORT_ERROR)
     except exceptions.EnecoQError as e:
-        _fail(log, "Error: %s" % e, EXIT_ENECOQ_ERROR)
+        _fail(log, secrets, "Error: %s" % e, EXIT_ENECOQ_ERROR)
     except Exception as e:  # pylint: disable=broad-except
         # Last resort, so users get an exit code instead of a traceback.
         _fail(
-            log, "Unexpected error: %s" % e, EXIT_UNEXPECTED_ERROR,
+            log, secrets, "Unexpected error: %s" % e, EXIT_UNEXPECTED_ERROR,
             exc_info=True,
         )
 
@@ -224,6 +228,7 @@ def _validate_arguments(
 
 def _fail(
     log: Optional[logging.Logger],
+    secrets: list[str],
     message: str,
     exit_code: int,
     exc_info: bool = False,
@@ -236,13 +241,14 @@ def _fail(
 
     Args:
         log: Configured logger, or None if logging is not set up yet.
+        secrets: Values to mask in the message, such as the password.
         message: Error message for the user.
         exit_code: Process exit code.
         exc_info: Whether to log the traceback.
     """
     if log is not None:
         log.error("%s", message, exc_info=exc_info)
-    click.echo(message, err=True)
+    click.echo(logger.mask_secrets(message, secrets), err=True)
     sys.exit(exit_code)
 
 

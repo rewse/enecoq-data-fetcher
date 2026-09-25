@@ -34,6 +34,22 @@ class _StderrHandler(logging.StreamHandler):
         """Ignore assignments; the stream is always sys.stderr."""
 
 
+def mask_secrets(text: str, secrets: Iterable[str]) -> str:
+    """Replace every occurrence of the secrets in text with MASK.
+
+    Args:
+        text: Text that may contain secrets.
+        secrets: Values to mask. Empty values are ignored.
+
+    Returns:
+        Text with the secrets masked.
+    """
+    # Longer secrets first, so one that contains another is fully masked.
+    for secret in sorted((s for s in secrets if s), key=len, reverse=True):
+        text = text.replace(secret, MASK)
+    return text
+
+
 class SensitiveDataFilter(logging.Filter):
     """Replaces known secret values in log messages with a mask."""
 
@@ -45,13 +61,10 @@ class SensitiveDataFilter(logging.Filter):
                 enecoQ password. Empty values are ignored.
         """
         super().__init__()
-        # Longer secrets first, so one that contains another is fully masked.
-        self._secrets = sorted(
-            (secret for secret in secrets if secret), key=len, reverse=True
-        )
+        self._secrets = [secret for secret in secrets if secret]
 
     def filter(self, record: logging.LogRecord) -> bool:
-        """Mask secrets in the formatted message of a record.
+        """Mask secrets in the message, traceback, and stack of a record.
 
         Args:
             record: Log record to filter.
@@ -62,14 +75,22 @@ class SensitiveDataFilter(logging.Filter):
         if not self._secrets:
             return True
         message = record.getMessage()
-        masked = message
-        for secret in self._secrets:
-            masked = masked.replace(secret, MASK)
+        masked = mask_secrets(message, self._secrets)
         if masked != message:
             # The secret may be in record.args, so store the masked result
             # as a message that needs no further formatting.
             record.msg = masked
             record.args = None
+        if record.exc_info and not record.exc_text:
+            # Formatters reuse exc_text instead of formatting exc_info again,
+            # so a masked exc_text keeps secrets out of the traceback.
+            record.exc_text = logging.Formatter().formatException(
+                record.exc_info
+            )
+        if record.exc_text:
+            record.exc_text = mask_secrets(record.exc_text, self._secrets)
+        if record.stack_info:
+            record.stack_info = mask_secrets(record.stack_info, self._secrets)
         return True
 
 
