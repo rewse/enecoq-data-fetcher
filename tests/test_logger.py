@@ -1,7 +1,9 @@
 """Tests for logger module."""
 
+import io
 import logging
 import os
+import sys
 import tempfile
 from pathlib import Path
 
@@ -73,31 +75,86 @@ def test_get_logger():
     print("✓ test_get_logger passed")
 
 
-def test_sensitive_data_filter():
-    """Test sensitive data filter."""
-    filter_obj = logger.SensitiveDataFilter()
-    
-    # Create a mock log record
+def test_sensitive_data_filter_masks_secret_in_args():
+    """Test that a secret passed as a format argument is masked."""
+    filter_obj = logger.SensitiveDataFilter(["s3cr3t"])
     record = logging.LogRecord(
         name="test",
         level=logging.INFO,
         pathname="",
         lineno=0,
-        msg="password: secret123",
-        args=(),
+        msg="Login with %s failed after %d tries",
+        args=("s3cr3t", 3),
         exc_info=None,
     )
     
-    # Apply filter
-    result = filter_obj.filter(record)
+    assert filter_obj.filter(record) is True
+    assert record.getMessage() == "Login with **** failed after 3 tries"
     
-    # Filter should return True (allow record)
-    assert result is True
+    print("✓ test_sensitive_data_filter_masks_secret_in_args passed")
+
+
+def test_sensitive_data_filter_keeps_other_messages():
+    """Test that messages without secrets keep their format arguments."""
+    filter_obj = logger.SensitiveDataFilter(["s3cr3t"])
+    record = logging.LogRecord(
+        name="test",
+        level=logging.INFO,
+        pathname="",
+        lineno=0,
+        msg="password field: %s",
+        args=("filled",),
+        exc_info=None,
+    )
     
-    # Message should be masked
-    assert "****" in str(record.msg) or "password" in str(record.msg).lower()
+    assert filter_obj.filter(record) is True
+    assert record.getMessage() == "password field: filled"
+    assert record.args == ("filled",)
     
-    print("✓ test_sensitive_data_filter passed")
+    print("✓ test_sensitive_data_filter_keeps_other_messages passed")
+
+
+def test_setup_logger_masks_secrets_in_file():
+    """Test that setup_logger masks the given secrets in the log file."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_file = os.path.join(tmpdir, "secret.log")
+        log = logger.setup_logger(log_file=log_file, secrets=["s3cr3t"])
+        
+        log.error("Request failed: %s", "token=s3cr3t")
+        for handler in log.handlers:
+            handler.flush()
+        
+        content = Path(log_file).read_text()
+        assert "s3cr3t" not in content
+        assert "token=****" in content
+    
+    print("✓ test_setup_logger_masks_secrets_in_file passed")
+
+
+def test_setup_logger_does_not_duplicate_filters():
+    """Test that calling setup_logger twice keeps a single filter."""
+    logger.setup_logger(secrets=["one"])
+    log = logger.setup_logger(secrets=["two"])
+    
+    assert len(log.filters) == 1
+    assert len(log.handlers) == 1
+    
+    print("✓ test_setup_logger_does_not_duplicate_filters passed")
+
+
+def test_console_handler_follows_current_stderr():
+    """Test that console logs go to sys.stderr as it is when emitting."""
+    log = logger.setup_logger()
+    original_stderr = sys.stderr
+    replaced = io.StringIO()
+    try:
+        sys.stderr = replaced
+        log.warning("After replacing stderr")
+    finally:
+        sys.stderr = original_stderr
+    
+    assert "After replacing stderr" in replaced.getvalue()
+    print("✓ test_console_handler_follows_current_stderr passed")
 
 
 def test_logging_integration():
@@ -129,7 +186,11 @@ if __name__ == "__main__":
     test_setup_logger_custom_level()
     test_setup_logger_custom_file()
     test_get_logger()
-    test_sensitive_data_filter()
+    test_sensitive_data_filter_masks_secret_in_args()
+    test_sensitive_data_filter_keeps_other_messages()
+    test_setup_logger_masks_secrets_in_file()
+    test_setup_logger_does_not_duplicate_filters()
+    test_console_handler_follows_current_stderr()
     test_logging_integration()
     
     print("\nAll logger tests passed!")
