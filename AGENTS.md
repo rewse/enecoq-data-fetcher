@@ -36,7 +36,7 @@ Keep new code within this split rather than adding cross-cutting logic to `cli.p
 
 ## Scraping with Playwright
 
-Selectors and element IDs must come from the live enecoQ pages, not from guesses: inspect the actual HTML with the Playwright MCP server (configured in `.kiro/settings/mcp.json`) before writing or changing a selector. When a page needs a login, ask for the enecoQ credentials in the chat; they are not stored in the repository.
+Selectors and element IDs must come from the live enecoQ pages, not from guesses: inspect the actual HTML with a browser automation tool before writing or changing a selector. When a page needs a login, ask for the enecoQ credentials in the chat; they are not stored in the repository.
 
 ## Development
 
