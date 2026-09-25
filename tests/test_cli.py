@@ -273,15 +273,138 @@ def test_cli_with_config_parameter(mock_controller_class):
     
     # Run CLI with custom config
     runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open("custom_config.yaml", "w", encoding="utf-8") as f:
+            f.write("timeout: 60\n")
+        result = runner.invoke(cli.main, [
+            "--email", "test@example.com",
+            "--password", "test123",
+            "--config", "custom_config.yaml",
+            "--format", "console"
+        ])
+    
+    assert result.exit_code == 0, result.output
+    config_arg = mock_controller_class.call_args.kwargs["config"]
+    assert config_arg.timeout == 60
+    print("✓ CLI executes with custom config parameter")
+
+
+def test_cli_missing_explicit_config():
+    """Test that a missing --config file is reported instead of ignored."""
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli.main, [
+            "--email", "test@example.com",
+            "--password", "test123",
+            "--config", "missing.yaml",
+        ])
+    
+    assert result.exit_code == 6
+    assert "Config file not found" in result.output
+    print("✓ CLI reports missing explicit config file")
+
+
+def _sample_today_data():
+    """Return PowerData for a successful today fetch."""
+    return models.PowerData(
+        period="today",
+        timestamp=datetime(2024, 1, 15, 10, 30, 0),
+        usage=models.PowerUsage(value=12.5),
+        cost=models.PowerCost(value=350.0),
+        co2=models.CO2Emission(value=6.25),
+    )
+
+
+def test_cli_invalid_config_content():
+    """Test that an invalid config file exits with the argument error code."""
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open("bad.yaml", "w", encoding="utf-8") as f:
+            f.write("timeout: thirty\n")
+        result = runner.invoke(cli.main, [
+            "--email", "test@example.com",
+            "--password", "test123",
+            "--config", "bad.yaml",
+        ])
+    
+    assert result.exit_code == 6, result.output
+    assert "timeout" in result.output
+    print("✓ CLI rejects invalid config content")
+
+
+@patch("enecoq_data_fetcher.cli.controller.EnecoQController")
+def test_cli_loads_default_config_when_present(mock_controller_class):
+    """Test that config.yaml in the working directory is loaded by default."""
+    mock_controller_class.return_value.fetch_power_data.return_value = (
+        _sample_today_data()
+    )
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open("config.yaml", "w", encoding="utf-8") as f:
+            f.write("timeout: 90\n")
+        result = runner.invoke(cli.main, [
+            "--email", "test@example.com",
+            "--password", "test123",
+            "--format", "console",
+        ])
+    
+    assert result.exit_code == 0, result.output
+    assert mock_controller_class.call_args.kwargs["config"].timeout == 90
+    print("✓ CLI loads config.yaml by default")
+
+
+@patch("enecoq_data_fetcher.cli.controller.EnecoQController")
+def test_cli_uses_defaults_without_config(mock_controller_class):
+    """Test that a missing default config.yaml is not an error."""
+    mock_controller_class.return_value.fetch_power_data.return_value = (
+        _sample_today_data()
+    )
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli.main, [
+            "--email", "test@example.com",
+            "--password", "test123",
+            "--format", "console",
+        ])
+    
+    assert result.exit_code == 0, result.output
+    assert mock_controller_class.call_args.kwargs["config"].timeout == 30
+    print("✓ CLI uses defaults without config.yaml")
+
+
+@patch("enecoq_data_fetcher.cli.controller.EnecoQController")
+def test_cli_masks_password_in_log_file(mock_controller_class):
+    """Test that the password never reaches the log file."""
+    mock_controller_class.return_value.fetch_power_data.side_effect = (
+        exceptions.FetchError("Page echoed hunter2-secret back")
+    )
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli.main, [
+            "--email", "test@example.com",
+            "--password", "hunter2-secret",
+            "--log-file", "run.log",
+        ])
+        with open("run.log", encoding="utf-8") as f:
+            content = f.read()
+    
+    assert result.exit_code == 2, result.output
+    assert "hunter2-secret" not in content
+    assert "Page echoed **** back" in content
+    print("✓ CLI masks password in log file")
+
+
+def test_cli_reports_argument_error_once():
+    """Test that an error before logging is set up is shown once."""
+    runner = CliRunner()
     result = runner.invoke(cli.main, [
-        "--email", "test@example.com",
+        "--email", "invalid-email",
         "--password", "test123",
-        "--config", "custom_config.yaml",
-        "--format", "console"
     ])
     
-    assert result.exit_code == 0
-    print("✓ CLI executes with custom config parameter")
+    assert result.exit_code == 6
+    assert result.output.count("Invalid argument") == 1, result.output
+    print("✓ CLI reports argument error once")
 
 
 if __name__ == "__main__":
@@ -298,4 +421,10 @@ if __name__ == "__main__":
     test_cli_export_error()
     test_cli_with_custom_config()
     test_cli_with_config_parameter()
+    test_cli_missing_explicit_config()
+    test_cli_invalid_config_content()
+    test_cli_loads_default_config_when_present()
+    test_cli_uses_defaults_without_config()
+    test_cli_masks_password_in_log_file()
+    test_cli_reports_argument_error_once()
     print("\nAll CLI tests passed!")

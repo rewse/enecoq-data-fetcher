@@ -64,7 +64,7 @@ class DataExporter:
 
             return json_str
 
-        except (OSError, IOError) as e:
+        except OSError as e:
             self._log.error("Failed to export JSON: %s", e, exc_info=True)
             raise exceptions.ExportError(
                 "Failed to export JSON: %s" % e

@@ -1,9 +1,10 @@
 """Command-line interface for enecoQ data fetcher."""
 
+import datetime
+import logging
 import os
 import sys
-from datetime import datetime
-from typing import Optional
+from typing import NoReturn, Optional
 
 import click
 
@@ -12,6 +13,16 @@ from enecoq_data_fetcher import config as config_module
 from enecoq_data_fetcher import controller
 from enecoq_data_fetcher import exceptions
 from enecoq_data_fetcher import logger
+
+# Loaded when --config is not given and the file exists
+DEFAULT_CONFIG_PATH = "config.yaml"
+
+EXIT_AUTH_ERROR = 1
+EXIT_FETCH_ERROR = 2
+EXIT_EXPORT_ERROR = 3
+EXIT_ENECOQ_ERROR = 4
+EXIT_UNEXPECTED_ERROR = 5
+EXIT_INVALID_ARGUMENT = 6
 
 
 @click.command()
@@ -49,9 +60,9 @@ from enecoq_data_fetcher import logger
 @click.option(
     "--config",
     "config_path",
-    type=click.Path(exists=False),
-    default="config.yaml",
-    help="Configuration file path (default: config.yaml).",
+    type=click.Path(dir_okay=False),
+    default=None,
+    help="Configuration file path (default: config.yaml if it exists).",
 )
 @click.option(
     "--log-level",
@@ -71,8 +82,8 @@ def main(
     period: str,
     output_format: str,
     output_path: Optional[str],
-    config_path: str,
-    log_level: str,
+    config_path: Optional[str],
+    log_level: Optional[str],
     log_file: Optional[str],
 ) -> None:
     """enecoQ Data Fetcher - Fetch power usage data from enecoQ Web Service.
@@ -98,138 +109,142 @@ def main(
         # Use custom config file
         $ enecoq-data-fetcher --email user@example.com --password secret --config /path/to/config.yaml
     """
+    log = None
     try:
-        # Validate arguments
-        _validate_arguments(email, password, period, output_format, output_path)
-
-        # Load configuration
-        config = config_module.Config.load(
-            config_path=config_path if config_path != "config.yaml" or os.path.exists(config_path) else None,
-            log_level=log_level.upper() if log_level is not None else None,
+        _validate_arguments(email, password, output_format, output_path)
+        config = _load_config(config_path, log_level, log_file)
+        log = logger.setup_logger(
+            log_level=config.log_level,
+            log_file=config.log_file,
+            secrets=[password],
         )
-
-        # Override log_file from command line if specified
-        if log_file is not None:
-            config.log_file = log_file
-
-        # Configure logging
-        log = logger.setup_logger(log_level=config.log_level, log_file=config.log_file)
-        start_time = datetime.now()
-        log.info("Starting enecoQ data fetcher at %s", start_time.isoformat())
+        log.info(
+            "Starting enecoQ data fetcher at %s",
+            datetime.datetime.now().isoformat(),
+        )
         log.debug(
             "Parameters - Period: %s, Format: %s, Config: %s",
-            period, output_format, config_path
+            period, output_format, config_path,
         )
         log.debug(
             "Configuration - Log level: %s, Timeout: %s, Max retries: %s",
-            config.log_level, config.timeout, config.max_retries
+            config.log_level, config.timeout, config.max_retries,
         )
 
-        # Create controller with config
-        enecoq_controller = controller.EnecoQController(email, password, config=config)
-
-        # Fetch power data
-        power_data = enecoq_controller.fetch_power_data(
+        enecoq_controller = controller.EnecoQController(
+            email, password, config=config
+        )
+        enecoq_controller.fetch_power_data(
             period=period.lower(),
             output_format=output_format.lower(),
             output_path=output_path,
         )
 
-        # Display success message for JSON format
-        if output_format.lower() == "json":
-            if output_path:
-                click.echo("Data successfully exported to: %s" % output_path)
-                log.info("Data successfully exported to: %s", output_path)
-            else:
-                # Data was already printed by exporter
-                log.info("Data successfully exported to console")
-        
-        end_time = datetime.now()
-        log.info("enecoQ data fetcher completed at %s", end_time.isoformat())
+        if output_path:
+            click.echo("Data successfully exported to: %s" % output_path)
+            log.info("Data successfully exported to: %s", output_path)
+        log.info(
+            "enecoQ data fetcher completed at %s",
+            datetime.datetime.now().isoformat(),
+        )
 
     except click.BadParameter as e:
-        log = logger.get_logger()
-        log.error("Invalid argument: %s", e.message)
-        click.echo("Invalid argument: %s" % e.message, err=True)
-        sys.exit(6)
-
+        _fail(log, "Invalid argument: %s" % e.message, EXIT_INVALID_ARGUMENT)
     except exceptions.AuthenticationError as e:
-        log = logger.get_logger()
-        log.error("Authentication error: %s", e)
-        click.echo("Authentication error: %s" % e, err=True)
-        sys.exit(1)
-
+        _fail(log, "Authentication error: %s" % e, EXIT_AUTH_ERROR)
     except exceptions.FetchError as e:
-        log = logger.get_logger()
-        log.error("Fetch error: %s", e)
-        click.echo("Fetch error: %s" % e, err=True)
-        sys.exit(2)
-
+        _fail(log, "Fetch error: %s" % e, EXIT_FETCH_ERROR)
     except exceptions.ExportError as e:
-        log = logger.get_logger()
-        log.error("Export error: %s", e)
-        click.echo("Export error: %s" % e, err=True)
-        sys.exit(3)
-
+        _fail(log, "Export error: %s" % e, EXIT_EXPORT_ERROR)
     except exceptions.EnecoQError as e:
-        log = logger.get_logger()
-        log.error("Error: %s", e)
-        click.echo("Error: %s" % e, err=True)
-        sys.exit(4)
+        _fail(log, "Error: %s" % e, EXIT_ENECOQ_ERROR)
+    except Exception as e:  # pylint: disable=broad-except
+        # Last resort, so users get an exit code instead of a traceback.
+        _fail(
+            log, "Unexpected error: %s" % e, EXIT_UNEXPECTED_ERROR,
+            exc_info=True,
+        )
 
-    except Exception as e:
-        log = logger.get_logger()
-        log.error("Unexpected error: %s", e, exc_info=True)
-        click.echo("Unexpected error: %s" % e, err=True)
-        sys.exit(5)
+
+def _load_config(
+    config_path: Optional[str],
+    log_level: Optional[str],
+    log_file: Optional[str],
+) -> config_module.Config:
+    """Load the configuration for this run.
+
+    Args:
+        config_path: Path given with --config, or None to use config.yaml
+            in the working directory when it exists.
+        log_level: Log level given with --log-level, if any.
+        log_file: Log file given with --log-file, if any.
+
+    Returns:
+        Loaded configuration.
+
+    Raises:
+        click.BadParameter: If the file is missing or invalid.
+    """
+    if config_path is None and os.path.exists(DEFAULT_CONFIG_PATH):
+        config_path = DEFAULT_CONFIG_PATH
+    try:
+        return config_module.Config.load(
+            config_path=config_path, log_level=log_level, log_file=log_file
+        )
+    except (FileNotFoundError, ValueError) as e:
+        raise click.BadParameter(str(e)) from e
 
 
 def _validate_arguments(
     email: str,
     password: str,
-    period: str,
     output_format: str,
     output_path: Optional[str],
 ) -> None:
-    """Validate command-line arguments.
+    """Validate arguments that Click's option types do not cover.
 
     Args:
         email: Email address for authentication.
         password: Password for authentication.
-        period: Data period ("today" or "month").
         output_format: Output format ("json" or "console").
         output_path: Optional output file path.
 
     Raises:
         click.BadParameter: If validation fails.
     """
-    # Validate email format (basic check)
-    if not email or "@" not in email:
+    if "@" not in email:
         raise click.BadParameter("Invalid email address format.")
-
-    # Validate password (not empty)
     if not password:
         raise click.BadParameter("Password cannot be empty.")
-
-    # Validate period (already validated by Click's Choice type)
-    # Additional validation if needed
-    if period.lower() not in ("today", "month"):
-        raise click.BadParameter(
-            "Invalid period: %s. Must be 'today' or 'month'." % period
-        )
-
-    # Validate output format (already validated by Click's Choice type)
-    if output_format.lower() not in ("json", "console"):
-        raise click.BadParameter(
-            "Invalid format: %s. Must be 'json' or 'console'." % output_format
-        )
-
-    # Validate output_path is only used with JSON format
     if output_path and output_format.lower() != "json":
         raise click.BadParameter(
             "Output path can only be specified with JSON format."
         )
 
 
+def _fail(
+    log: Optional[logging.Logger],
+    message: str,
+    exit_code: int,
+    exc_info: bool = False,
+) -> NoReturn:
+    """Report an error and exit.
+
+    Before logging is set up the logger has no handlers, and Python's
+    last-resort handler would print the message a second time, so the
+    message is only logged once a logger exists.
+
+    Args:
+        log: Configured logger, or None if logging is not set up yet.
+        message: Error message for the user.
+        exit_code: Process exit code.
+        exc_info: Whether to log the traceback.
+    """
+    if log is not None:
+        log.error("%s", message, exc_info=exc_info)
+    click.echo(message, err=True)
+    sys.exit(exit_code)
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
