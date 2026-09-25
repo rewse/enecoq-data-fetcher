@@ -16,7 +16,7 @@ Selectors and element IDs must come from the live enecoQ pages, not from guesses
 
 Use uv, not pip. Tests do not use pytest: run all of them with `./tests/run_tests.sh`, or one file with `PYTHONPATH=src uv run python tests/test_fetcher.py`. Each test file must run its own tests from an `if __name__ == "__main__":` block, because that is how `run_tests.sh` invokes it.
 
-`make release-patch`, `make release-minor`, and `make release-major` tag and push, and CI then publishes to PyPI, so run them only when asked.
+`make release-patch`, `make release-minor`, and `make release-major` run `scripts/bump_version.sh` with `--push`: they require a clean `main` in sync with origin, tag, and push, and CI then publishes to PyPI, so run them only when asked.
 
 Follow the Google Python Style Guide, including its rule to import modules rather than individual classes or functions (`from enecoq_data_fetcher import fetcher`, then `fetcher.fetch_data()`).
 

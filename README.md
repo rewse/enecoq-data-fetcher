@@ -79,14 +79,14 @@ enecoq-data-fetcher --email your@email.com --password yourpassword --output data
 ```json
 {
   "period": "month",
-  "timestamp": "2024-01-15T10:30:00.123456",
+  "timestamp": "2024-01-15T10:30:00.123456+09:00",
   "usage": 250.5,
   "cost": 7515.0,
   "co2": 125.25
 }
 ```
 
-JSON には単位が含まれません。`usage` は kWh、`cost` は円（JPY）、`co2` は kg です。値は期間の開始からの累計です。
+JSON には単位が含まれません。`usage` は kWh、`cost` は円（JPY）、`co2` は kg です。値は期間の開始からの累計です。`timestamp` は取得した時刻で、実行環境のタイムゾーンのオフセットが付きます。
 
 ### コンソール
 
@@ -123,6 +123,8 @@ log_file: logs/enecoq.log
 timeout: 30
 max_retries: 3
 ```
+
+`max_retries` は、取得に失敗したときに最初の試行に追加でやり直す回数です（`0` でやり直しなし）。`--config` で指定したファイルが存在しない場合や、値の型が正しくない場合、知らない項目がある場合はエラーになります。
 
 コマンドライン引数と設定ファイルの両方で指定した場合は、コマンドライン引数が優先されます。
 
