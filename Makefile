@@ -1,4 +1,4 @@
-.PHONY: release-patch release-minor release-major help
+.PHONY: help release-patch release-minor release-major
 
 help:
 	@echo "Available commands:"
@@ -7,13 +7,10 @@ help:
 	@echo "  make release-major  - Bump major version (1.0.0) and push"
 
 release-patch:
-	@./scripts/bump_version.sh patch
-	@git push && git push --tags
+	@./scripts/bump_version.sh patch --push
 
 release-minor:
-	@./scripts/bump_version.sh minor
-	@git push && git push --tags
+	@./scripts/bump_version.sh minor --push
 
 release-major:
-	@./scripts/bump_version.sh major
-	@git push && git push --tags
+	@./scripts/bump_version.sh major --push

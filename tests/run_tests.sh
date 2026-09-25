@@ -42,6 +42,7 @@ run_suite "Config" tests/test_config.py
 run_suite "Exporter" tests/test_exporter.py
 run_suite "Logger" tests/test_logger.py
 run_suite "CLI" tests/test_cli.py
+run_suite "Release script" tests/test_bump_version.py
 
 echo "=== Property-Based Tests ==="
 echo ""
