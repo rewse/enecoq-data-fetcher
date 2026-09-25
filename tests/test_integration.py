@@ -11,6 +11,8 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+from playwright import sync_api
+
 from enecoq_data_fetcher import cli
 from enecoq_data_fetcher import config
 from enecoq_data_fetcher import controller
@@ -23,7 +25,7 @@ def test_end_to_end_json_output():
     """Test complete workflow with JSON output to file."""
     print("\n=== Testing end-to-end JSON output ===")
     
-    with patch("enecoq_data_fetcher.controller.sync_playwright") as mock_playwright:
+    with patch("enecoq_data_fetcher.controller.sync_api.sync_playwright") as mock_playwright:
         # Setup mock browser automation
         mock_browser = Mock()
         mock_context = Mock()
@@ -78,7 +80,7 @@ def test_end_to_end_console_output():
     """Test complete workflow with console output."""
     print("\n=== Testing end-to-end console output ===")
     
-    with patch("enecoq_data_fetcher.controller.sync_playwright") as mock_playwright:
+    with patch("enecoq_data_fetcher.controller.sync_api.sync_playwright") as mock_playwright:
         # Setup mock browser automation
         mock_browser = Mock()
         mock_context = Mock()
@@ -150,7 +152,7 @@ def test_error_handling_authentication():
     """Test error handling for authentication failures."""
     print("\n=== Testing authentication error handling ===")
     
-    with patch("enecoq_data_fetcher.controller.sync_playwright") as mock_playwright:
+    with patch("enecoq_data_fetcher.controller.sync_api.sync_playwright") as mock_playwright:
         # Setup mock browser automation
         mock_browser = Mock()
         mock_context = Mock()
@@ -183,7 +185,7 @@ def test_error_handling_fetch():
     """Test error handling for fetch failures."""
     print("\n=== Testing fetch error handling ===")
     
-    with patch("enecoq_data_fetcher.controller.sync_playwright") as mock_playwright:
+    with patch("enecoq_data_fetcher.controller.sync_api.sync_playwright") as mock_playwright:
         # Setup mock browser automation
         mock_browser = Mock()
         mock_context = Mock()
@@ -200,11 +202,12 @@ def test_error_handling_fetch():
                 
                 # Run CLI
                 runner = CliRunner()
-                result = runner.invoke(cli.main, [
-                    "--email", "test@example.com",
-                    "--password", "test123",
-                    "--format", "console"
-                ])
+                with patch("time.sleep"):  # Skip actual sleep
+                    result = runner.invoke(cli.main, [
+                        "--email", "test@example.com",
+                        "--password", "test123",
+                        "--format", "console"
+                    ])
                 
                 # Verify error handling
                 assert result.exit_code == 2
@@ -216,11 +219,6 @@ def test_error_handling_fetch():
 def test_config_file_integration():
     """Test configuration file loading integration."""
     print("\n=== Testing config file integration ===")
-    
-    # Skip if PyYAML is not available
-    if not config.YAML_AVAILABLE:
-        print("⊘ Skipping config file test (PyYAML not installed)")
-        return
     
     with tempfile.NamedTemporaryFile(
         mode='w',
@@ -236,7 +234,7 @@ max_retries: 5
         temp_path = f.name
     
     try:
-        with patch("enecoq_data_fetcher.controller.sync_playwright") as mock_playwright:
+        with patch("enecoq_data_fetcher.controller.sync_api.sync_playwright") as mock_playwright:
             # Setup mock browser automation
             mock_browser = Mock()
             mock_context = Mock()
@@ -264,6 +262,7 @@ max_retries: 5
                         "--email", "test@example.com",
                         "--password", "test123",
                         "--config", temp_path,
+                        "--period", "today",
                         "--format", "console"
                     ])
                     
@@ -279,7 +278,7 @@ def test_retry_mechanism():
     """Test retry mechanism for transient failures."""
     print("\n=== Testing retry mechanism ===")
     
-    with patch("enecoq_data_fetcher.controller.sync_playwright") as mock_playwright:
+    with patch("enecoq_data_fetcher.controller.sync_api.sync_playwright") as mock_playwright:
         # Setup mock browser automation
         mock_browser = Mock()
         mock_context = Mock()
@@ -322,6 +321,150 @@ def test_retry_mechanism():
                 assert mock_fetch.call_count == 2  # First failed, second succeeded
                 
                 print("✓ Retry mechanism test passed")
+
+
+def _mock_browser(mock_playwright):
+    """Wire a mocked sync_playwright to return a mock browser.
+
+    Args:
+        mock_playwright: Patched sync_playwright.
+
+    Returns:
+        Tuple of the mock browser, context, and page.
+    """
+    mock_browser = Mock()
+    mock_context = Mock()
+    mock_page = Mock()
+    launcher = mock_playwright.return_value.__enter__.return_value.chromium
+    launcher.launch.return_value = mock_browser
+    mock_browser.new_context.return_value = mock_context
+    mock_context.new_page.return_value = mock_page
+    return mock_browser, mock_context, mock_page
+
+
+def _sample_month_data():
+    """Return PowerData for a successful month fetch."""
+    return models.PowerData(
+        period="month",
+        timestamp=datetime(2024, 1, 15, 10, 30, 0),
+        usage=models.PowerUsage(value=450.0),
+        cost=models.PowerCost(value=12500.0),
+        co2=models.CO2Emission(value=225.0),
+    )
+
+
+def test_retry_on_login_timeout():
+    """Test that a browser timeout during login is retried."""
+    print("\n=== Testing retry on login timeout ===")
+    
+    with patch("enecoq_data_fetcher.controller.sync_api.sync_playwright") as mock_playwright:
+        mock_browser, _, _ = _mock_browser(mock_playwright)
+        with patch("enecoq_data_fetcher.authenticator.EnecoQAuthenticator.login") as mock_login:
+            mock_login.side_effect = [
+                sync_api.TimeoutError("Timeout 30000ms exceeded"),
+                None,
+            ]
+            with patch("enecoq_data_fetcher.fetcher.EnecoQDataFetcher.fetch_month_data") as mock_fetch:
+                mock_fetch.return_value = _sample_month_data()
+                ctl = controller.EnecoQController(
+                    "test@example.com", "test123", config=config.Config()
+                )
+                with patch("time.sleep"):
+                    result = ctl.fetch_power_data("month", "console")
+    
+    assert result.usage.value == 450.0
+    assert mock_login.call_count == 2
+    assert mock_browser.close.call_count == 2
+    print("✓ Retry on login timeout test passed")
+
+
+def test_no_retry_on_authentication_error():
+    """Test that rejected credentials are not retried."""
+    print("\n=== Testing no retry on authentication error ===")
+    
+    with patch("enecoq_data_fetcher.controller.sync_api.sync_playwright") as mock_playwright:
+        mock_browser, _, _ = _mock_browser(mock_playwright)
+        with patch("enecoq_data_fetcher.authenticator.EnecoQAuthenticator.login") as mock_login:
+            mock_login.side_effect = exceptions.AuthenticationError("Rejected")
+            ctl = controller.EnecoQController(
+                "test@example.com", "wrong", config=config.Config()
+            )
+            try:
+                with patch("time.sleep") as mock_sleep:
+                    ctl.fetch_power_data("month", "console")
+                assert False, "Should have raised AuthenticationError"
+            except exceptions.AuthenticationError:
+                pass
+    
+    assert mock_login.call_count == 1
+    assert not mock_sleep.called
+    assert mock_browser.close.call_count == 1
+    print("✓ No retry on authentication error test passed")
+
+
+def test_retries_are_added_to_first_attempt():
+    """Test that max_retries counts retries after the first attempt."""
+    print("\n=== Testing retry count ===")
+    
+    with patch("enecoq_data_fetcher.controller.sync_api.sync_playwright") as mock_playwright:
+        _mock_browser(mock_playwright)
+        with patch("enecoq_data_fetcher.authenticator.EnecoQAuthenticator.login"):
+            with patch("enecoq_data_fetcher.fetcher.EnecoQDataFetcher.fetch_month_data") as mock_fetch:
+                mock_fetch.side_effect = exceptions.FetchError("Widget down")
+                ctl = controller.EnecoQController(
+                    "test@example.com", "test123",
+                    config=config.Config(max_retries=2),
+                )
+                try:
+                    with patch("time.sleep") as mock_sleep:
+                        ctl.fetch_power_data("month", "console")
+                    assert False, "Should have raised FetchError"
+                except exceptions.FetchError as e:
+                    assert e.error_code == "RETRY_EXHAUSTED"
+    
+    assert mock_fetch.call_count == 3
+    assert [c.args[0] for c in mock_sleep.call_args_list] == [2, 4]
+    print("✓ Retry count test passed")
+
+
+def test_zero_retries_tries_once():
+    """Test that max_retries of 0 still makes one attempt."""
+    print("\n=== Testing zero retries ===")
+    
+    with patch("enecoq_data_fetcher.controller.sync_api.sync_playwright") as mock_playwright:
+        _mock_browser(mock_playwright)
+        with patch("enecoq_data_fetcher.authenticator.EnecoQAuthenticator.login"):
+            with patch("enecoq_data_fetcher.fetcher.EnecoQDataFetcher.fetch_month_data") as mock_fetch:
+                mock_fetch.return_value = _sample_month_data()
+                ctl = controller.EnecoQController(
+                    "test@example.com", "test123",
+                    config=config.Config(max_retries=0),
+                )
+                result = ctl.fetch_power_data("month", "console")
+    
+    assert result.cost.value == 12500.0
+    assert mock_fetch.call_count == 1
+    print("✓ Zero retries test passed")
+
+
+def test_browser_context_uses_config():
+    """Test that user_agent and timeout from the config reach the browser."""
+    print("\n=== Testing browser context settings ===")
+    
+    with patch("enecoq_data_fetcher.controller.sync_api.sync_playwright") as mock_playwright:
+        mock_browser, mock_context, _ = _mock_browser(mock_playwright)
+        with patch("enecoq_data_fetcher.authenticator.EnecoQAuthenticator.login"):
+            with patch("enecoq_data_fetcher.fetcher.EnecoQDataFetcher.fetch_month_data") as mock_fetch:
+                mock_fetch.return_value = _sample_month_data()
+                ctl = controller.EnecoQController(
+                    "test@example.com", "test123",
+                    config=config.Config(user_agent="TestAgent/1.0", timeout=45),
+                )
+                ctl.fetch_power_data("month", "console")
+    
+    mock_browser.new_context.assert_called_once_with(user_agent="TestAgent/1.0")
+    mock_context.set_default_timeout.assert_called_once_with(45000)
+    print("✓ Browser context settings test passed")
 
 
 def test_data_model_serialization():
@@ -368,6 +511,11 @@ if __name__ == "__main__":
     test_error_handling_fetch()
     test_config_file_integration()
     test_retry_mechanism()
+    test_retry_on_login_timeout()
+    test_no_retry_on_authentication_error()
+    test_retries_are_added_to_first_attempt()
+    test_zero_retries_tries_once()
+    test_browser_context_uses_config()
     test_data_model_serialization()
     
     print("\n" + "=" * 50)
