@@ -7,7 +7,7 @@ log_level: INFO  # Options: DEBUG, INFO, WARNING, ERROR
 
 # Network configuration
 timeout: 30  # Request timeout in seconds
-max_retries: 3  # Maximum number of retry attempts
+max_retries: 3  # Retries after the first failed attempt (0 disables retries)
 
 # Browser configuration
 user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15"

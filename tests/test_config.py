@@ -47,25 +47,20 @@ def test_config_load_without_file():
 
 def test_config_load_with_nonexistent_file():
     """Test loading configuration with non-existent file."""
-    cfg = config.Config.load(
-        config_path="/nonexistent/config.yaml",
-        log_level="WARNING"
-    )
-    
-    # Should use defaults with command-line overrides
-    assert cfg.log_level == "WARNING"
-    assert cfg.timeout == 30
+    try:
+        config.Config.load(
+            config_path="/nonexistent/config.yaml",
+            log_level="WARNING"
+        )
+        assert False, "Should have raised FileNotFoundError"
+    except FileNotFoundError:
+        pass
     
     print("✓ Config load with nonexistent file test passed")
 
 
 def test_config_from_yaml_file():
     """Test loading configuration from YAML file."""
-    # Skip if PyYAML is not available
-    if not config.YAML_AVAILABLE:
-        print("⊘ Skipping YAML test (PyYAML not installed)")
-        return
-    
     # Create temporary config file
     with tempfile.NamedTemporaryFile(
         mode='w',
@@ -101,11 +96,6 @@ user_agent: "Custom User Agent"
 
 def test_config_load_with_yaml_and_override():
     """Test loading configuration from YAML with command-line override."""
-    # Skip if PyYAML is not available
-    if not config.YAML_AVAILABLE:
-        print("⊘ Skipping YAML override test (PyYAML not installed)")
-        return
-    
     # Create temporary config file
     with tempfile.NamedTemporaryFile(
         mode='w',
@@ -142,11 +132,6 @@ max_retries: 5
 
 def test_config_from_file_not_found():
     """Test loading configuration from non-existent file."""
-    # Skip if PyYAML is not available
-    if not config.YAML_AVAILABLE:
-        print("⊘ Skipping file not found test (PyYAML not installed)")
-        return
-    
     try:
         config.Config.from_file("/nonexistent/config.yaml")
         assert False, "Should have raised FileNotFoundError"
@@ -155,24 +140,63 @@ def test_config_from_file_not_found():
         print("✓ Config from_file not found test passed")
 
 
-def test_config_without_yaml_library():
-    """Test configuration behavior when PyYAML is not available."""
-    # Temporarily disable YAML
-    original_yaml_available = config.YAML_AVAILABLE
-    config.YAML_AVAILABLE = False
-    
-    try:
-        # Should raise ValueError when trying to load from file
-        try:
-            config.Config.from_file("config.yaml")
-            assert False, "Should have raised ValueError"
-        except ValueError as e:
-            assert "PyYAML" in str(e)
-            print("✓ Config without YAML library test passed")
-    finally:
-        # Restore original state
-        config.YAML_AVAILABLE = original_yaml_available
+def _write_temp_config(content):
+    """Write content to a temporary YAML file and return its path."""
+    with tempfile.NamedTemporaryFile(
+        mode='w',
+        suffix='.yaml',
+        delete=False,
+        encoding='utf-8'
+    ) as f:
+        f.write(content)
+        return f.name
 
+
+def test_config_from_file_invalid_values():
+    """Test that invalid config files are rejected."""
+    cases = [
+        "log_level: VERBOSE\n",
+        "timeout: thirty\n",
+        "timeout: 0\n",
+        "max_retries: -1\n",
+        "max_retries: true\n",
+        "unknown_key: 1\n",
+        "- not\n- a mapping\n",
+        "log_level: [unclosed\n",
+    ]
+    for content in cases:
+        temp_path = _write_temp_config(content)
+        try:
+            config.Config.from_file(temp_path)
+            assert False, "Should have raised ValueError for %r" % content
+        except ValueError:
+            pass
+        finally:
+            os.unlink(temp_path)
+    
+    print("✓ Config from_file invalid values test passed")
+
+
+def test_config_from_empty_file():
+    """Test that an empty config file yields defaults."""
+    temp_path = _write_temp_config("")
+    try:
+        cfg = config.Config.from_file(temp_path)
+        assert cfg == config.Config()
+    finally:
+        os.unlink(temp_path)
+    
+    print("✓ Config from empty file test passed")
+
+
+def test_config_log_level_normalized():
+    """Test that log levels are normalized to upper case."""
+    assert config.Config(log_level="debug").log_level == "DEBUG"
+    cfg = config.Config.load(log_level="warning", log_file="app.log")
+    assert cfg.log_level == "WARNING"
+    assert cfg.log_file == "app.log"
+    
+    print("✓ Config log level normalized test passed")
 
 if __name__ == "__main__":
     print("Running configuration tests...\n")
@@ -184,6 +208,8 @@ if __name__ == "__main__":
     test_config_from_yaml_file()
     test_config_load_with_yaml_and_override()
     test_config_from_file_not_found()
-    test_config_without_yaml_library()
+    test_config_from_file_invalid_values()
+    test_config_from_empty_file()
+    test_config_log_level_normalized()
     
     print("\n✓ All configuration tests passed!")
