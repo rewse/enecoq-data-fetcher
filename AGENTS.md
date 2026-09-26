@@ -16,13 +16,13 @@ Selectors and element IDs must come from the live enecoQ pages, not from guesses
 
 Use uv, not pip. Tests do not use pytest: run all of them with `./tests/run_tests.sh`, or one file with `PYTHONPATH=src uv run python tests/test_fetcher.py`. Each test file must run its own tests from an `if __name__ == "__main__":` block, because that is how `run_tests.sh` invokes it.
 
-`make release-patch`, `make release-minor`, and `make release-major` run `scripts/bump_version.sh` with `--push`: they require a clean `main` in sync with origin, tag, and push, and CI then publishes to PyPI, so run them only when asked.
+`make release-patch`, `make release-minor`, and `make release-major` run `scripts/bump_version.sh` with `--push`: they require a clean `main` in sync with origin, tag, and push, and CI then publishes to PyPI, so run them only when asked. PyPI Trusted Publishing is bound to `.github/workflows/release.yml` and the `release` environment, so do not rename either.
 
 Follow the Google Python Style Guide, including its rule to import modules rather than individual classes or functions (`from enecoq_data_fetcher import fetcher`, then `fetcher.fetch_data()`).
 
 ## Dependencies and security
 
-Aikido Safe Chain cannot enforce a minimum package age for Python, so check it by hand: a new dependency or version must be at least 96 hours old, actively maintained, and free of known vulnerabilities. Before committing a dependency change, run `osv-scanner --lockfile=uv.lock` and the tests. Keep the Safe Chain and OSV-Scanner jobs in `.github/workflows/security-scan.yml` intact.
+Aikido Safe Chain cannot enforce a minimum package age for Python, so check it by hand: a new dependency or version must be at least 96 hours old, actively maintained, and free of known vulnerabilities. Before committing a dependency change, run `osv-scanner --lockfile=uv.lock` and the tests. Keep the Safe Chain and OSV-Scanner jobs in `.github/workflows/dependency-scan.yml` intact.
 
 Report vulnerabilities in this project through a GitHub Security Advisory, not a public issue.
 
