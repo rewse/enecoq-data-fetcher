@@ -2,8 +2,7 @@
 
 from playwright import sync_api
 
-from enecoq_data_fetcher import exceptions
-from enecoq_data_fetcher import logger
+from enecoq_data_fetcher import exceptions, logger
 
 
 class EnecoQAuthenticator:
@@ -93,5 +92,5 @@ class EnecoQAuthenticator:
         if error_elements.count() > 0:
             error_text = error_elements.first.text_content()
             if error_text:
-                return "Authentication failed: %s" % error_text.strip()
+                return f"Authentication failed: {error_text.strip()}"
         return "Authentication failed"
