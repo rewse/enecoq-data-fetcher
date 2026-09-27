@@ -2,7 +2,6 @@
 
 import os
 import tempfile
-from pathlib import Path
 
 from enecoq_data_fetcher import config
 
@@ -153,7 +152,7 @@ def test_config_from_file_invalid_values():
         temp_path = _write_temp_config(content)
         try:
             config.Config.from_file(temp_path)
-            assert False, "Should have raised ValueError for %r" % content
+            assert False, f"Should have raised ValueError for {content!r}"
         except ValueError:
             pass
         finally:
