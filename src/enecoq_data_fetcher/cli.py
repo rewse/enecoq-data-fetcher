@@ -8,8 +8,11 @@ from typing import NoReturn
 
 import click
 
-from enecoq_data_fetcher import __version__, controller, exceptions, logger
+from enecoq_data_fetcher import __version__
 from enecoq_data_fetcher import config as config_module
+from enecoq_data_fetcher import controller
+from enecoq_data_fetcher import exceptions
+from enecoq_data_fetcher import logger
 
 # Loaded when --config is not given and the file exists
 DEFAULT_CONFIG_PATH = "config.yaml"

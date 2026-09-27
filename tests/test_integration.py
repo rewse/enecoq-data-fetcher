@@ -7,13 +7,20 @@ the complete workflow of the application.
 import json
 import os
 import tempfile
-from datetime import datetime, timedelta, timezone
-from unittest.mock import Mock, patch
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
+from unittest.mock import Mock
+from unittest.mock import patch
 
 from click.testing import CliRunner
 from playwright import sync_api
 
-from enecoq_data_fetcher import cli, config, controller, exceptions, models
+from enecoq_data_fetcher import cli
+from enecoq_data_fetcher import config
+from enecoq_data_fetcher import controller
+from enecoq_data_fetcher import exceptions
+from enecoq_data_fetcher import models
 
 # The fetcher records aware local time, and enecoQ users are in Japan.
 JST = timezone(timedelta(hours=9))

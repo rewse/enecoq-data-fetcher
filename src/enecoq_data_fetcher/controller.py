@@ -6,15 +6,13 @@ from typing import TypeVar
 
 from playwright import sync_api
 
-from enecoq_data_fetcher import (
-    authenticator,
-    exceptions,
-    exporter,
-    fetcher,
-    logger,
-    models,
-)
+from enecoq_data_fetcher import authenticator
 from enecoq_data_fetcher import config as config_module
+from enecoq_data_fetcher import exceptions
+from enecoq_data_fetcher import exporter
+from enecoq_data_fetcher import fetcher
+from enecoq_data_fetcher import logger
+from enecoq_data_fetcher import models
 
 _T = TypeVar("_T")
 

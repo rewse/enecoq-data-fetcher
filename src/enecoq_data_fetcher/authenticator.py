@@ -2,7 +2,8 @@
 
 from playwright import sync_api
 
-from enecoq_data_fetcher import exceptions, logger
+from enecoq_data_fetcher import exceptions
+from enecoq_data_fetcher import logger
 
 
 class EnecoQAuthenticator:

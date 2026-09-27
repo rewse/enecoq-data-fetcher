@@ -1,9 +1,12 @@
 """Tests for exporter functionality."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
 from pathlib import Path
 
-from enecoq_data_fetcher import exporter, models
+from enecoq_data_fetcher import exporter
+from enecoq_data_fetcher import models
 
 # The fetcher records aware local time, and enecoQ users are in Japan.
 JST = timezone(timedelta(hours=9))

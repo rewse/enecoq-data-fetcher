@@ -4,7 +4,8 @@ from unittest.mock import Mock
 
 from playwright import sync_api
 
-from enecoq_data_fetcher import exceptions, fetcher
+from enecoq_data_fetcher import exceptions
+from enecoq_data_fetcher import fetcher
 
 
 def test_fetcher_initialization():

@@ -6,7 +6,9 @@ from typing import ClassVar
 
 from playwright import sync_api
 
-from enecoq_data_fetcher import exceptions, logger, models
+from enecoq_data_fetcher import exceptions
+from enecoq_data_fetcher import logger
+from enecoq_data_fetcher import models
 
 
 class EnecoQDataFetcher:

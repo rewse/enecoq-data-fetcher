@@ -4,7 +4,8 @@ from unittest.mock import Mock
 
 from playwright import sync_api
 
-from enecoq_data_fetcher import authenticator, exceptions
+from enecoq_data_fetcher import authenticator
+from enecoq_data_fetcher import exceptions
 
 
 def test_authenticator_initialization():

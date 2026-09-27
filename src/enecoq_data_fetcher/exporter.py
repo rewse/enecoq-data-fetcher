@@ -4,7 +4,9 @@ import json
 import sys
 from pathlib import Path
 
-from enecoq_data_fetcher import exceptions, logger, models
+from enecoq_data_fetcher import exceptions
+from enecoq_data_fetcher import logger
+from enecoq_data_fetcher import models
 
 
 class DataExporter:

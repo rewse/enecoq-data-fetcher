@@ -1,6 +1,8 @@
 """Tests for data models."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
 
 from enecoq_data_fetcher import models
 

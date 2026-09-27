@@ -56,3 +56,7 @@ build-backend = "hatchling.build"
 typeCheckingMode = "standard"
 venvPath = "."
 venv = ".venv"
+
+[tool.ruff.lint.isort]
+force-single-line = true
+single-line-exclusions = ["collections.abc", "typing"]
