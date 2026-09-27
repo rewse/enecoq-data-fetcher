@@ -89,26 +89,19 @@ class Config:
             with open(config_path, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
         except FileNotFoundError as e:
-            raise FileNotFoundError(
-                "Config file not found: %s" % config_path
-            ) from e
+            raise FileNotFoundError("Config file not found: %s" % config_path) from e
         except yaml.YAMLError as e:
-            raise ValueError(
-                "Invalid YAML in %s: %s" % (config_path, e)
-            ) from e
+            raise ValueError("Invalid YAML in %s: %s" % (config_path, e)) from e
 
         if data is None:
             return cls()
         if not isinstance(data, dict):
-            raise ValueError(
-                "Config file must contain a mapping: %s" % config_path
-            )
+            raise ValueError("Config file must contain a mapping: %s" % config_path)
         known_keys = {field.name for field in dataclasses.fields(cls)}
         unknown_keys = sorted(str(key) for key in data if key not in known_keys)
         if unknown_keys:
             raise ValueError(
-                "Unknown keys in %s: %s"
-                % (config_path, ", ".join(unknown_keys))
+                "Unknown keys in %s: %s" % (config_path, ", ".join(unknown_keys))
             )
         return cls(**data)
 

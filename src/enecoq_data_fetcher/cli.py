@@ -125,16 +125,18 @@ def main(
         )
         log.debug(
             "Parameters - Period: %s, Format: %s, Config: %s",
-            period, output_format, config_path,
+            period,
+            output_format,
+            config_path,
         )
         log.debug(
             "Configuration - Log level: %s, Timeout: %s, Max retries: %s",
-            config.log_level, config.timeout, config.max_retries,
+            config.log_level,
+            config.timeout,
+            config.max_retries,
         )
 
-        enecoq_controller = controller.EnecoQController(
-            email, password, config=config
-        )
+        enecoq_controller = controller.EnecoQController(email, password, config=config)
         enecoq_controller.fetch_power_data(
             period=period.lower(),
             output_format=output_format.lower(),
@@ -151,7 +153,9 @@ def main(
 
     except click.BadParameter as e:
         _fail(
-            log, secrets, "Invalid argument: %s" % e.message,
+            log,
+            secrets,
+            "Invalid argument: %s" % e.message,
             EXIT_INVALID_ARGUMENT,
         )
     except exceptions.AuthenticationError as e:
@@ -165,7 +169,10 @@ def main(
     except Exception as e:  # pylint: disable=broad-except
         # Last resort, so users get an exit code instead of a traceback.
         _fail(
-            log, secrets, "Unexpected error: %s" % e, EXIT_UNEXPECTED_ERROR,
+            log,
+            secrets,
+            "Unexpected error: %s" % e,
+            EXIT_UNEXPECTED_ERROR,
             exc_info=True,
         )
 
@@ -221,9 +228,7 @@ def _validate_arguments(
     if not password:
         raise click.BadParameter("Password cannot be empty.")
     if output_path and output_format.lower() != "json":
-        raise click.BadParameter(
-            "Output path can only be specified with JSON format."
-        )
+        raise click.BadParameter("Output path can only be specified with JSON format.")
 
 
 def _fail(

@@ -84,9 +84,7 @@ class SensitiveDataFilter(logging.Filter):
         if record.exc_info and not record.exc_text:
             # Formatters reuse exc_text instead of formatting exc_info again,
             # so a masked exc_text keeps secrets out of the traceback.
-            record.exc_text = logging.Formatter().formatException(
-                record.exc_info
-            )
+            record.exc_text = logging.Formatter().formatException(record.exc_info)
         if record.exc_text:
             record.exc_text = mask_secrets(record.exc_text, self._secrets)
         if record.stack_info:

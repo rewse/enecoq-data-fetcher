@@ -66,9 +66,7 @@ class DataExporter:
 
         except OSError as e:
             self._log.error("Failed to export JSON: %s", e, exc_info=True)
-            raise exceptions.ExportError(
-                "Failed to export JSON: %s" % e
-            ) from e
+            raise exceptions.ExportError("Failed to export JSON: %s" % e) from e
         except (TypeError, ValueError) as e:
             self._log.error("Failed to serialize data to JSON: %s", e, exc_info=True)
             raise exceptions.ExportError(
@@ -82,7 +80,7 @@ class DataExporter:
             data: PowerData object to display.
         """
         self._log.info("Exporting data to console")
-        
+
         # Print header
         print("=" * 30)
         print("enecoQ Data")
@@ -108,5 +106,5 @@ class DataExporter:
 
         # Flush output to ensure immediate display
         sys.stdout.flush()
-        
+
         self._log.debug("Console export completed")

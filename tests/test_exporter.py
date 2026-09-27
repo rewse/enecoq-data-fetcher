@@ -53,7 +53,7 @@ def test_export_json_file():
     # Test JSON file export
     output_path = "test_output.json"
     json_str = exp.export_json(test_data, output_path)
-    
+
     assert Path(output_path).exists()
     content = Path(output_path).read_text(encoding="utf-8")
     assert content == json_str

@@ -91,15 +91,9 @@ class EnecoQDataFetcher:
             power_data = models.PowerData(
                 period=period,
                 timestamp=datetime.datetime.now().astimezone(),
-                usage=models.PowerUsage(
-                    value=self._extract_value(iframe, "使用量")
-                ),
-                cost=models.PowerCost(
-                    value=self._extract_value(iframe, "使用料金")
-                ),
-                co2=models.CO2Emission(
-                    value=self._extract_value(iframe, "CO2")
-                ),
+                usage=models.PowerUsage(value=self._extract_value(iframe, "使用量")),
+                cost=models.PowerCost(value=self._extract_value(iframe, "使用料金")),
+                co2=models.CO2Emission(value=self._extract_value(iframe, "CO2")),
             )
         except (exceptions.FetchError, sync_api.Error) as e:
             self._log.error("Failed to fetch %s's data: %s", period, e)
@@ -163,9 +157,7 @@ class EnecoQDataFetcher:
         """
         label = self.PERIOD_LABELS.get(period)
         if label is None:
-            raise exceptions.FetchError(
-                "Invalid period: %s" % period, "INVALID_PERIOD"
-            )
+            raise exceptions.FetchError("Invalid period: %s" % period, "INVALID_PERIOD")
         self._log.debug("Selecting period: %s", period)
         try:
             iframe.locator("select").first.select_option(label=label)

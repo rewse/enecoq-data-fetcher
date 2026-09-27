@@ -16,12 +16,17 @@ from enecoq_data_fetcher import models
 # Custom strategies for domain-specific types
 positive_floats = st.floats(min_value=0.0, max_value=1e9, allow_nan=False)
 period_strategy = st.sampled_from(["today", "month"])
-unit_strategy = st.text(min_size=1, max_size=10, alphabet="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+unit_strategy = st.text(
+    min_size=1,
+    max_size=10,
+    alphabet="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+)
 
 
 # =============================================================================
 # PowerUsage Properties
 # =============================================================================
+
 
 @given(value=positive_floats)
 def test_power_usage_value_preserved(value):
@@ -50,6 +55,7 @@ def test_power_usage_custom_unit_preserved(value, unit):
 # PowerCost Properties
 # =============================================================================
 
+
 @given(value=positive_floats)
 def test_power_cost_value_preserved(value):
     """Property: PowerCost preserves the input value."""
@@ -76,6 +82,7 @@ def test_power_cost_custom_unit_preserved(value, unit):
 # CO2Emission Properties
 # =============================================================================
 
+
 @given(value=positive_floats)
 def test_co2_emission_value_preserved(value):
     """Property: CO2Emission preserves the input value."""
@@ -94,6 +101,7 @@ def test_co2_emission_to_dict_returns_value(value):
 # PowerData Properties
 # =============================================================================
 
+
 @given(
     period=period_strategy,
     usage_value=positive_floats,
@@ -110,7 +118,7 @@ def test_power_data_preserves_all_values(period, usage_value, cost_value, co2_va
         cost=models.PowerCost(value=cost_value),
         co2=models.CO2Emission(value=co2_value),
     )
-    
+
     assert power_data.period == period
     assert power_data.timestamp == timestamp
     assert power_data.usage.value == usage_value
@@ -134,16 +142,16 @@ def test_power_data_to_dict_structure(period, usage_value, cost_value, co2_value
         cost=models.PowerCost(value=cost_value),
         co2=models.CO2Emission(value=co2_value),
     )
-    
+
     result = power_data.to_dict()
-    
+
     # Check structure
     assert "period" in result
     assert "timestamp" in result
     assert "usage" in result
     assert "cost" in result
     assert "co2" in result
-    
+
     # Check values
     assert result["period"] == period
     assert result["usage"] == usage_value
@@ -169,9 +177,9 @@ def test_power_data_to_dict_timestamp_is_iso_format(
         cost=models.PowerCost(value=cost_value),
         co2=models.CO2Emission(value=co2_value),
     )
-    
+
     result = power_data.to_dict()
-    
+
     # Timestamp should be ISO format string
     assert isinstance(result["timestamp"], str)
     # Should be parseable back to datetime
@@ -182,6 +190,7 @@ def test_power_data_to_dict_timestamp_is_iso_format(
 # =============================================================================
 # Exception Properties
 # =============================================================================
+
 
 @given(message=st.text(min_size=1, max_size=100))
 def test_enecoq_error_message_preserved(message):
@@ -233,6 +242,7 @@ def test_export_error_is_enecoq_error(message):
 # JSON Serialization Properties
 # =============================================================================
 
+
 @given(
     period=period_strategy,
     usage_value=positive_floats,
@@ -242,7 +252,7 @@ def test_export_error_is_enecoq_error(message):
 def test_power_data_json_serializable(period, usage_value, cost_value, co2_value):
     """Property: PowerData.to_dict() result is JSON serializable."""
     import json
-    
+
     timestamp = datetime(2024, 1, 15, 10, 30, 0)
     power_data = models.PowerData(
         period=period,
@@ -251,13 +261,13 @@ def test_power_data_json_serializable(period, usage_value, cost_value, co2_value
         cost=models.PowerCost(value=cost_value),
         co2=models.CO2Emission(value=co2_value),
     )
-    
+
     result = power_data.to_dict()
-    
+
     # Should not raise exception
     json_str = json.dumps(result)
     assert json_str is not None
-    
+
     # Should be deserializable
     loaded = json.loads(json_str)
     assert loaded["period"] == period
@@ -268,57 +278,57 @@ def test_power_data_json_serializable(period, usage_value, cost_value, co2_value
 
 if __name__ == "__main__":
     print("Running property-based tests...\n")
-    
+
     # Run all tests
     test_power_usage_value_preserved()
     print("✓ test_power_usage_value_preserved passed")
-    
+
     test_power_usage_to_dict_returns_value()
     print("✓ test_power_usage_to_dict_returns_value passed")
-    
+
     test_power_usage_custom_unit_preserved()
     print("✓ test_power_usage_custom_unit_preserved passed")
-    
+
     test_power_cost_value_preserved()
     print("✓ test_power_cost_value_preserved passed")
-    
+
     test_power_cost_to_dict_returns_value()
     print("✓ test_power_cost_to_dict_returns_value passed")
-    
+
     test_power_cost_custom_unit_preserved()
     print("✓ test_power_cost_custom_unit_preserved passed")
-    
+
     test_co2_emission_value_preserved()
     print("✓ test_co2_emission_value_preserved passed")
-    
+
     test_co2_emission_to_dict_returns_value()
     print("✓ test_co2_emission_to_dict_returns_value passed")
-    
+
     test_power_data_preserves_all_values()
     print("✓ test_power_data_preserves_all_values passed")
-    
+
     test_power_data_to_dict_structure()
     print("✓ test_power_data_to_dict_structure passed")
-    
+
     test_power_data_to_dict_timestamp_is_iso_format()
     print("✓ test_power_data_to_dict_timestamp_is_iso_format passed")
-    
+
     test_enecoq_error_message_preserved()
     print("✓ test_enecoq_error_message_preserved passed")
-    
+
     test_enecoq_error_with_code_format()
     print("✓ test_enecoq_error_with_code_format passed")
-    
+
     test_authentication_error_is_enecoq_error()
     print("✓ test_authentication_error_is_enecoq_error passed")
-    
+
     test_fetch_error_is_enecoq_error()
     print("✓ test_fetch_error_is_enecoq_error passed")
-    
+
     test_export_error_is_enecoq_error()
     print("✓ test_export_error_is_enecoq_error passed")
-    
+
     test_power_data_json_serializable()
     print("✓ test_power_data_json_serializable passed")
-    
+
     print("\n✓ All property-based tests passed!")

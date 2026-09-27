@@ -52,9 +52,7 @@ class EnecoQController:
             self._config.max_retries if max_retries is None else max_retries
         )
         if self._max_retries < 0:
-            raise ValueError(
-                "max_retries must be 0 or greater: %s" % self._max_retries
-            )
+            raise ValueError("max_retries must be 0 or greater: %s" % self._max_retries)
         self._backoff_factor = backoff_factor
         self._authenticator = authenticator.EnecoQAuthenticator(email, password)
         self._log = logger.get_logger()
@@ -110,9 +108,7 @@ class EnecoQController:
         with sync_api.sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
             try:
-                context = browser.new_context(
-                    user_agent=self._config.user_agent
-                )
+                context = browser.new_context(user_agent=self._config.user_agent)
                 context.set_default_timeout(self._config.timeout * 1000)
                 page = context.new_page()
 
@@ -148,11 +144,9 @@ class EnecoQController:
                 return operation()
             except (exceptions.FetchError, sync_api.Error) as e:
                 last_error = e
-                self._log.warning(
-                    "Attempt %s/%s failed: %s", attempt, attempts, e
-                )
+                self._log.warning("Attempt %s/%s failed: %s", attempt, attempts, e)
             if attempt < attempts:
-                wait_time = self._backoff_factor ** attempt
+                wait_time = self._backoff_factor**attempt
                 self._log.info("Retrying in %s seconds", wait_time)
                 time.sleep(wait_time)
 

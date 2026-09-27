@@ -24,8 +24,12 @@ GIT_ENV = dict(
 def _git(repo, *args):
     """Run git in repo and return its stdout."""
     return subprocess.run(
-        ["git", *args], cwd=repo, env=GIT_ENV, check=True,
-        capture_output=True, text=True,
+        ["git", *args],
+        cwd=repo,
+        env=GIT_ENV,
+        check=True,
+        capture_output=True,
+        text=True,
     ).stdout.strip()
 
 
@@ -42,11 +46,13 @@ def _make_repo(tmpdir):
     work = pathlib.Path(tmpdir) / "work"
     subprocess.run(
         ["git", "init", "--quiet", "--bare", "-b", "main", str(origin)],
-        env=GIT_ENV, check=True,
+        env=GIT_ENV,
+        check=True,
     )
     subprocess.run(
         ["git", "init", "--quiet", "-b", "main", str(work)],
-        env=GIT_ENV, check=True,
+        env=GIT_ENV,
+        check=True,
     )
     (work / "scripts").mkdir()
     shutil.copy(SCRIPT, work / "scripts" / "bump_version.sh")
@@ -62,8 +68,11 @@ def _make_repo(tmpdir):
 def _bump(work, *args):
     """Run the copied script in the work repository."""
     return subprocess.run(
-        ["bash", "scripts/bump_version.sh", *args], cwd=work, env=GIT_ENV,
-        capture_output=True, text=True,
+        ["bash", "scripts/bump_version.sh", *args],
+        cwd=work,
+        env=GIT_ENV,
+        capture_output=True,
+        text=True,
     )
 
 
@@ -76,13 +85,15 @@ def test_bump_patch_commits_and_tags():
     """Test that a patch bump commits only the version file and tags it."""
     with tempfile.TemporaryDirectory() as tmpdir:
         work = _make_repo(tmpdir)
-        
+
         result = _bump(work, "patch")
-        
+
         assert result.returncode == 0, result.stderr
         assert _version(work) == '__version__ = "1.2.4"'
         assert _git(work, "log", "-1", "--format=%s") == "chore: bump version to 1.2.4"
-        assert _git(work, "show", "--name-only", "--format=", "HEAD") == str(VERSION_FILE)
+        assert _git(work, "show", "--name-only", "--format=", "HEAD") == str(
+            VERSION_FILE
+        )
         assert _git(work, "tag", "--list") == "v1.2.4"
         assert _git(work, "ls-remote", "--tags", "origin") == ""
     print("✓ Bump patch commits and tags test passed")
@@ -105,9 +116,9 @@ def test_bump_with_push_sends_branch_and_tag():
     with tempfile.TemporaryDirectory() as tmpdir:
         work = _make_repo(tmpdir)
         _git(work, "tag", "local-only")
-        
+
         result = _bump(work, "patch", "--push")
-        
+
         assert result.returncode == 0, result.stderr
         remote_tags = _git(work, "ls-remote", "--tags", "origin")
         assert "refs/tags/v1.2.4" in remote_tags
@@ -129,10 +140,10 @@ def test_bump_refuses_unclean_tree():
     with tempfile.TemporaryDirectory() as tmpdir:
         work = _make_repo(tmpdir)
         head = _git(work, "rev-parse", "HEAD")
-        
+
         (work / "notes.txt").write_text("draft\n", encoding="utf-8")
         _assert_refused(work, _bump(work, "patch"), head)
-        
+
         _git(work, "add", "notes.txt")
         _assert_refused(work, _bump(work, "patch"), head)
     print("✓ Bump refuses unclean tree test passed")
@@ -144,7 +155,7 @@ def test_bump_refuses_other_branch():
         work = _make_repo(tmpdir)
         _git(work, "switch", "--quiet", "-c", "feature")
         head = _git(work, "rev-parse", "HEAD")
-        
+
         _assert_refused(work, _bump(work, "patch"), head)
     print("✓ Bump refuses other branch test passed")
 
@@ -155,7 +166,7 @@ def test_bump_refuses_unpushed_commit():
         work = _make_repo(tmpdir)
         _git(work, "commit", "--quiet", "--allow-empty", "-m", "unpushed")
         head = _git(work, "rev-parse", "HEAD")
-        
+
         _assert_refused(work, _bump(work, "patch"), head)
     print("✓ Bump refuses unpushed commit test passed")
 
@@ -168,9 +179,9 @@ def test_bump_refuses_existing_tag():
         _git(work, "push", "--quiet", "origin", "v1.2.4")
         _git(work, "tag", "--delete", "v1.2.4")
         head = _git(work, "rev-parse", "HEAD")
-        
+
         result = _bump(work, "patch")
-        
+
         assert result.returncode != 0
         assert _version(work) == '__version__ = "1.2.3"'
         assert _git(work, "rev-parse", "HEAD") == head
@@ -182,7 +193,7 @@ def test_bump_refuses_invalid_arguments():
     with tempfile.TemporaryDirectory() as tmpdir:
         work = _make_repo(tmpdir)
         head = _git(work, "rev-parse", "HEAD")
-        
+
         for args in (("build",), ("patch", "--force"), ()):
             result = _bump(work, *args)
             _assert_refused(work, result, head)
@@ -192,7 +203,7 @@ def test_bump_refuses_invalid_arguments():
 
 if __name__ == "__main__":
     print("Running bump_version tests...\n")
-    
+
     test_bump_patch_commits_and_tags()
     test_bump_minor_and_major_reset_lower_parts()
     test_bump_with_push_sends_branch_and_tag()
@@ -201,5 +212,5 @@ if __name__ == "__main__":
     test_bump_refuses_unpushed_commit()
     test_bump_refuses_existing_tag()
     test_bump_refuses_invalid_arguments()
-    
+
     print("\n✓ All bump_version tests passed!")
