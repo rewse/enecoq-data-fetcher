@@ -190,7 +190,7 @@ def test_setup_logger_masks_secrets_in_traceback():
         try:
             raise RuntimeError("bad password hunter2")
         except RuntimeError:
-            log.error("Unexpected error", exc_info=True)
+            log.exception("Unexpected error")
         for handler in log.handlers:
             handler.flush()
 

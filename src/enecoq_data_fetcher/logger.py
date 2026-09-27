@@ -4,7 +4,6 @@ import logging
 import pathlib
 import sys
 from collections.abc import Iterable
-from typing import Optional
 
 LOGGER_NAME = "enecoq_data_fetcher"
 
@@ -94,7 +93,7 @@ class SensitiveDataFilter(logging.Filter):
 
 def setup_logger(
     log_level: str = "INFO",
-    log_file: Optional[str] = None,
+    log_file: str | None = None,
     secrets: Iterable[str] = (),
 ) -> logging.Logger:
     """Set up the package logger with console and optional file handlers.
