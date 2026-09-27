@@ -1,13 +1,14 @@
 """Tests for CLI functionality."""
 
+from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, patch
 
 from click.testing import CliRunner
 
-from enecoq_data_fetcher import cli
-from enecoq_data_fetcher import exceptions
-from enecoq_data_fetcher import models
-from datetime import datetime
+from enecoq_data_fetcher import cli, exceptions, models
+
+# The fetcher records aware local time, and enecoQ users are in Japan.
+JST = timezone(timedelta(hours=9))
 
 
 def test_cli_help():
@@ -112,7 +113,7 @@ def test_cli_success_console_format(mock_controller_class):
     # Create mock power data
     mock_data = models.PowerData(
         period="today",
-        timestamp=datetime(2024, 1, 15, 10, 30, 0),
+        timestamp=datetime(2024, 1, 15, 10, 30, 0, tzinfo=JST),
         usage=models.PowerUsage(value=12.5),
         cost=models.PowerCost(value=350.0),
         co2=models.CO2Emission(value=6.25),
@@ -154,7 +155,7 @@ def test_cli_success_json_format(mock_controller_class):
     # Create mock power data
     mock_data = models.PowerData(
         period="month",
-        timestamp=datetime(2024, 1, 15, 10, 30, 0),
+        timestamp=datetime(2024, 1, 15, 10, 30, 0, tzinfo=JST),
         usage=models.PowerUsage(value=450.0),
         cost=models.PowerCost(value=12500.0),
         co2=models.CO2Emission(value=225.0),
@@ -278,7 +279,7 @@ def test_cli_with_config_parameter(mock_controller_class):
     # Create mock power data
     mock_data = models.PowerData(
         period="today",
-        timestamp=datetime(2024, 1, 15, 10, 30, 0),
+        timestamp=datetime(2024, 1, 15, 10, 30, 0, tzinfo=JST),
         usage=models.PowerUsage(value=12.5),
         cost=models.PowerCost(value=350.0),
         co2=models.CO2Emission(value=6.25),
@@ -335,7 +336,7 @@ def _sample_today_data():
     """Return PowerData for a successful today fetch."""
     return models.PowerData(
         period="today",
-        timestamp=datetime(2024, 1, 15, 10, 30, 0),
+        timestamp=datetime(2024, 1, 15, 10, 30, 0, tzinfo=JST),
         usage=models.PowerUsage(value=12.5),
         cost=models.PowerCost(value=350.0),
         co2=models.CO2Emission(value=6.25),

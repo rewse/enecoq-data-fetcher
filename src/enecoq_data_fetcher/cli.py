@@ -4,15 +4,12 @@ import datetime
 import logging
 import os
 import sys
-from typing import NoReturn, Optional
+from typing import NoReturn
 
 import click
 
-from enecoq_data_fetcher import __version__
+from enecoq_data_fetcher import __version__, controller, exceptions, logger
 from enecoq_data_fetcher import config as config_module
-from enecoq_data_fetcher import controller
-from enecoq_data_fetcher import exceptions
-from enecoq_data_fetcher import logger
 
 # Loaded when --config is not given and the file exists
 DEFAULT_CONFIG_PATH = "config.yaml"
@@ -81,10 +78,10 @@ def main(
     password: str,
     period: str,
     output_format: str,
-    output_path: Optional[str],
-    config_path: Optional[str],
-    log_level: Optional[str],
-    log_file: Optional[str],
+    output_path: str | None,
+    config_path: str | None,
+    log_level: str | None,
+    log_file: str | None,
 ) -> None:
     """enecoQ Data Fetcher - Fetch power usage data from enecoQ Web Service.
 
@@ -121,7 +118,7 @@ def main(
         )
         log.info(
             "Starting enecoQ data fetcher at %s",
-            datetime.datetime.now().isoformat(),
+            datetime.datetime.now().astimezone().isoformat(),
         )
         log.debug(
             "Parameters - Period: %s, Format: %s, Config: %s",
@@ -144,43 +141,43 @@ def main(
         )
 
         if output_path:
-            click.echo("Data successfully exported to: %s" % output_path)
+            click.echo(f"Data successfully exported to: {output_path}")
             log.info("Data successfully exported to: %s", output_path)
         log.info(
             "enecoQ data fetcher completed at %s",
-            datetime.datetime.now().isoformat(),
+            datetime.datetime.now().astimezone().isoformat(),
         )
 
     except click.BadParameter as e:
         _fail(
             log,
             secrets,
-            "Invalid argument: %s" % e.message,
+            f"Invalid argument: {e.message}",
             EXIT_INVALID_ARGUMENT,
         )
     except exceptions.AuthenticationError as e:
-        _fail(log, secrets, "Authentication error: %s" % e, EXIT_AUTH_ERROR)
+        _fail(log, secrets, f"Authentication error: {e}", EXIT_AUTH_ERROR)
     except exceptions.FetchError as e:
-        _fail(log, secrets, "Fetch error: %s" % e, EXIT_FETCH_ERROR)
+        _fail(log, secrets, f"Fetch error: {e}", EXIT_FETCH_ERROR)
     except exceptions.ExportError as e:
-        _fail(log, secrets, "Export error: %s" % e, EXIT_EXPORT_ERROR)
+        _fail(log, secrets, f"Export error: {e}", EXIT_EXPORT_ERROR)
     except exceptions.EnecoQError as e:
-        _fail(log, secrets, "Error: %s" % e, EXIT_ENECOQ_ERROR)
-    except Exception as e:  # pylint: disable=broad-except
+        _fail(log, secrets, f"Error: {e}", EXIT_ENECOQ_ERROR)
+    except Exception as e:  # noqa: BLE001  last resort that turns any error into an exit code
         # Last resort, so users get an exit code instead of a traceback.
         _fail(
             log,
             secrets,
-            "Unexpected error: %s" % e,
+            f"Unexpected error: {e}",
             EXIT_UNEXPECTED_ERROR,
             exc_info=True,
         )
 
 
 def _load_config(
-    config_path: Optional[str],
-    log_level: Optional[str],
-    log_file: Optional[str],
+    config_path: str | None,
+    log_level: str | None,
+    log_file: str | None,
 ) -> config_module.Config:
     """Load the configuration for this run.
 
@@ -210,7 +207,7 @@ def _validate_arguments(
     email: str,
     password: str,
     output_format: str,
-    output_path: Optional[str],
+    output_path: str | None,
 ) -> None:
     """Validate arguments that Click's option types do not cover.
 
@@ -232,7 +229,7 @@ def _validate_arguments(
 
 
 def _fail(
-    log: Optional[logging.Logger],
+    log: logging.Logger | None,
     secrets: list[str],
     message: str,
     exit_code: int,
