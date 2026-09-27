@@ -1,10 +1,12 @@
 """Tests for exporter functionality."""
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from enecoq_data_fetcher import exporter
-from enecoq_data_fetcher import models
+from enecoq_data_fetcher import exporter, models
+
+# The fetcher records aware local time, and enecoQ users are in Japan.
+JST = timezone(timedelta(hours=9))
 
 
 def test_export_json_string():
@@ -12,7 +14,7 @@ def test_export_json_string():
     # Create test data
     test_data = models.PowerData(
         period="today",
-        timestamp=datetime(2024, 1, 15, 10, 30, 0),
+        timestamp=datetime(2024, 1, 15, 10, 30, 0, tzinfo=JST),
         usage=models.PowerUsage(value=12.5),
         cost=models.PowerCost(value=350.0),
         co2=models.CO2Emission(value=6.25),
@@ -31,7 +33,7 @@ def test_export_json_string():
     assert "12.5" in json_str
     assert "350.0" in json_str
     assert "6.25" in json_str
-    assert "2024-01-15T10:30:00" in json_str
+    assert "2024-01-15T10:30:00+09:00" in json_str
     assert "today" in json_str
     print("✓ JSON string generation works")
 
@@ -41,7 +43,7 @@ def test_export_json_file():
     # Create test data
     test_data = models.PowerData(
         period="today",
-        timestamp=datetime(2024, 1, 15, 10, 30, 0),
+        timestamp=datetime(2024, 1, 15, 10, 30, 0, tzinfo=JST),
         usage=models.PowerUsage(value=12.5),
         cost=models.PowerCost(value=350.0),
         co2=models.CO2Emission(value=6.25),
@@ -68,7 +70,7 @@ def test_export_console():
     # Create test data
     test_data = models.PowerData(
         period="month",
-        timestamp=datetime(2024, 1, 15, 10, 30, 0),
+        timestamp=datetime(2024, 1, 15, 10, 30, 0, tzinfo=JST),
         usage=models.PowerUsage(value=450.0),
         cost=models.PowerCost(value=12500.0),
         co2=models.CO2Emission(value=225.0),

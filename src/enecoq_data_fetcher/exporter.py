@@ -3,11 +3,8 @@
 import json
 import sys
 from pathlib import Path
-from typing import Optional
 
-from enecoq_data_fetcher import exceptions
-from enecoq_data_fetcher import logger
-from enecoq_data_fetcher import models
+from enecoq_data_fetcher import exceptions, logger, models
 
 
 class DataExporter:
@@ -23,7 +20,7 @@ class DataExporter:
     def export_json(
         self,
         data: models.PowerData,
-        output_path: Optional[str] = None,
+        output_path: str | None = None,
     ) -> str:
         """Export data as JSON.
 
@@ -66,11 +63,11 @@ class DataExporter:
 
         except OSError as e:
             self._log.error("Failed to export JSON: %s", e, exc_info=True)
-            raise exceptions.ExportError("Failed to export JSON: %s" % e) from e
+            raise exceptions.ExportError(f"Failed to export JSON: {e}") from e
         except (TypeError, ValueError) as e:
             self._log.error("Failed to serialize data to JSON: %s", e, exc_info=True)
             raise exceptions.ExportError(
-                "Failed to serialize data to JSON: %s" % e
+                f"Failed to serialize data to JSON: {e}"
             ) from e
 
     def export_console(self, data: models.PowerData) -> None:
@@ -88,18 +85,18 @@ class DataExporter:
         print()
 
         # Print period and acquisition timestamp
-        print("Period: %s" % data.period)
-        print("Timestamp: %s" % data.timestamp.strftime("%Y-%m-%d %H:%M:%S"))
+        print(f"Period: {data.period}")
+        print(f"Timestamp: {data.timestamp:%Y-%m-%d %H:%M:%S}")
         print()
 
         # Print power usage
-        print("Power Usage: %s %s" % (data.usage.value, data.usage.unit))
+        print(f"Power Usage: {data.usage.value} {data.usage.unit}")
 
         # Print power cost
-        print("Power Cost: %s %s" % (data.cost.value, data.cost.unit))
+        print(f"Power Cost: {data.cost.value} {data.cost.unit}")
 
         # Print CO2 emission
-        print("CO2 Emission: %s %s" % (data.co2.value, data.co2.unit))
+        print(f"CO2 Emission: {data.co2.value} {data.co2.unit}")
 
         print()
         print("=" * 30)
