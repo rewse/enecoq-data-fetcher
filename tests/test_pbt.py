@@ -4,14 +4,15 @@ This module contains property-based tests using Hypothesis to verify
 invariants and properties of the data models and components.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
-from hypothesis import given, assume, settings
+from hypothesis import given
 from hypothesis import strategies as st
 
-from enecoq_data_fetcher import exceptions
-from enecoq_data_fetcher import models
+from enecoq_data_fetcher import exceptions, models
 
+# The fetcher records aware local time, and enecoQ users are in Japan.
+JST = timezone(timedelta(hours=9))
 
 # Custom strategies for domain-specific types
 positive_floats = st.floats(min_value=0.0, max_value=1e9, allow_nan=False)
@@ -110,7 +111,7 @@ def test_co2_emission_to_dict_returns_value(value):
 )
 def test_power_data_preserves_all_values(period, usage_value, cost_value, co2_value):
     """Property: PowerData preserves all input values."""
-    timestamp = datetime.now()
+    timestamp = datetime.now().astimezone()
     power_data = models.PowerData(
         period=period,
         timestamp=timestamp,
@@ -134,7 +135,7 @@ def test_power_data_preserves_all_values(period, usage_value, cost_value, co2_va
 )
 def test_power_data_to_dict_structure(period, usage_value, cost_value, co2_value):
     """Property: PowerData.to_dict() returns correct structure."""
-    timestamp = datetime(2024, 1, 15, 10, 30, 0)
+    timestamp = datetime(2024, 1, 15, 10, 30, 0, tzinfo=JST)
     power_data = models.PowerData(
         period=period,
         timestamp=timestamp,
@@ -169,7 +170,7 @@ def test_power_data_to_dict_timestamp_is_iso_format(
     period, usage_value, cost_value, co2_value
 ):
     """Property: PowerData.to_dict() timestamp is ISO format string."""
-    timestamp = datetime(2024, 1, 15, 10, 30, 0)
+    timestamp = datetime(2024, 1, 15, 10, 30, 0, tzinfo=JST)
     power_data = models.PowerData(
         period=period,
         timestamp=timestamp,
@@ -210,7 +211,7 @@ def test_enecoq_error_with_code_format(message, code):
     assert error.message == message
     assert error.error_code == code
     # String representation should include code in brackets
-    assert "[%s]" % code in str(error)
+    assert f"[{code}]" in str(error)
     assert message in str(error)
 
 
@@ -253,7 +254,7 @@ def test_power_data_json_serializable(period, usage_value, cost_value, co2_value
     """Property: PowerData.to_dict() result is JSON serializable."""
     import json
 
-    timestamp = datetime(2024, 1, 15, 10, 30, 0)
+    timestamp = datetime(2024, 1, 15, 10, 30, 0, tzinfo=JST)
     power_data = models.PowerData(
         period=period,
         timestamp=timestamp,

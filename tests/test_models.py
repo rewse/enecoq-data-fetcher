@@ -1,8 +1,11 @@
 """Tests for data models."""
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from enecoq_data_fetcher import models
+
+# The fetcher records aware local time, and enecoQ users are in Japan.
+JST = timezone(timedelta(hours=9))
 
 
 def test_power_usage_creation():
@@ -64,7 +67,7 @@ def test_co2_emission_to_dict():
 
 def test_power_data_creation():
     """Test PowerData model creation."""
-    timestamp = datetime(2024, 1, 15, 10, 30, 0)
+    timestamp = datetime(2024, 1, 15, 10, 30, 0, tzinfo=JST)
     power_data = models.PowerData(
         period="today",
         timestamp=timestamp,
@@ -83,7 +86,7 @@ def test_power_data_creation():
 
 def test_power_data_to_dict():
     """Test PowerData to_dict conversion."""
-    timestamp = datetime(2024, 1, 15, 10, 30, 0)
+    timestamp = datetime(2024, 1, 15, 10, 30, 0, tzinfo=JST)
     power_data = models.PowerData(
         period="today",
         timestamp=timestamp,
@@ -95,7 +98,7 @@ def test_power_data_to_dict():
     result = power_data.to_dict()
 
     assert result["period"] == "today"
-    assert result["timestamp"] == "2024-01-15T10:30:00"
+    assert result["timestamp"] == "2024-01-15T10:30:00+09:00"
     assert result["usage"] == 12.5
     assert result["cost"] == 350.0
     assert result["co2"] == 6.25
@@ -104,7 +107,7 @@ def test_power_data_to_dict():
 
 def test_power_data_with_month_period():
     """Test PowerData with month period."""
-    timestamp = datetime(2024, 1, 15, 10, 30, 0)
+    timestamp = datetime(2024, 1, 15, 10, 30, 0, tzinfo=JST)
     power_data = models.PowerData(
         period="month",
         timestamp=timestamp,
@@ -143,7 +146,7 @@ def test_zero_values():
     """Test models with zero values."""
     power_data = models.PowerData(
         period="today",
-        timestamp=datetime.now(),
+        timestamp=datetime.now().astimezone(),
         usage=models.PowerUsage(value=0.0),
         cost=models.PowerCost(value=0.0),
         co2=models.CO2Emission(value=0.0),
@@ -161,7 +164,7 @@ def test_large_values():
     """Test models with large values."""
     power_data = models.PowerData(
         period="month",
-        timestamp=datetime.now(),
+        timestamp=datetime.now().astimezone(),
         usage=models.PowerUsage(value=9999.99),
         cost=models.PowerCost(value=999999.99),
         co2=models.CO2Emission(value=4999.99),
