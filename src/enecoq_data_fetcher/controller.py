@@ -2,17 +2,19 @@
 
 import time
 from collections.abc import Callable
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 from playwright import sync_api
 
-from enecoq_data_fetcher import authenticator
+from enecoq_data_fetcher import (
+    authenticator,
+    exceptions,
+    exporter,
+    fetcher,
+    logger,
+    models,
+)
 from enecoq_data_fetcher import config as config_module
-from enecoq_data_fetcher import exceptions
-from enecoq_data_fetcher import exporter
-from enecoq_data_fetcher import fetcher
-from enecoq_data_fetcher import logger
-from enecoq_data_fetcher import models
 
 _T = TypeVar("_T")
 
@@ -29,8 +31,8 @@ class EnecoQController:
         self,
         email: str,
         password: str,
-        config: Optional[config_module.Config] = None,
-        max_retries: Optional[int] = None,
+        config: config_module.Config | None = None,
+        max_retries: int | None = None,
         backoff_factor: int = DEFAULT_BACKOFF_FACTOR,
     ) -> None:
         """Initialize controller with credentials.
@@ -52,7 +54,7 @@ class EnecoQController:
             self._config.max_retries if max_retries is None else max_retries
         )
         if self._max_retries < 0:
-            raise ValueError("max_retries must be 0 or greater: %s" % self._max_retries)
+            raise ValueError(f"max_retries must be 0 or greater: {self._max_retries}")
         self._backoff_factor = backoff_factor
         self._authenticator = authenticator.EnecoQAuthenticator(email, password)
         self._log = logger.get_logger()
@@ -61,7 +63,7 @@ class EnecoQController:
         self,
         period: str,
         output_format: str = "json",
-        output_path: Optional[str] = None,
+        output_path: str | None = None,
     ) -> models.PowerData:
         """Fetch power data for the period and export it.
 
@@ -80,7 +82,7 @@ class EnecoQController:
         """
         if period not in ("today", "month"):
             raise exceptions.FetchError(
-                "Invalid period: %s. Must be 'today' or 'month'." % period,
+                f"Invalid period: {period}. Must be 'today' or 'month'.",
                 "INVALID_PERIOD",
             )
 
@@ -151,7 +153,7 @@ class EnecoQController:
                 time.sleep(wait_time)
 
         raise exceptions.FetchError(
-            "Operation failed after %s attempts: %s" % (attempts, last_error),
+            f"Operation failed after {attempts} attempts: {last_error}",
             "RETRY_EXHAUSTED",
         ) from last_error
 
@@ -159,7 +161,7 @@ class EnecoQController:
         self,
         power_data: models.PowerData,
         output_format: str,
-        output_path: Optional[str],
+        output_path: str | None,
     ) -> None:
         """Export power data in the given format.
 
@@ -179,6 +181,6 @@ class EnecoQController:
             data_exporter.export_console(power_data)
         else:
             raise exceptions.ExportError(
-                "Invalid output format: %s" % output_format,
+                f"Invalid output format: {output_format}",
                 "INVALID_FORMAT",
             )
