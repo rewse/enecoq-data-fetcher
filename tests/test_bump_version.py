@@ -73,6 +73,7 @@ def _bump(work, *args):
         env=GIT_ENV,
         capture_output=True,
         text=True,
+        check=False,
     )
 
 

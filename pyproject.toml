@@ -51,3 +51,8 @@ path = "src/enecoq_data_fetcher/__init__.py"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.basedpyright]
+typeCheckingMode = "standard"
+venvPath = "."
+venv = ".venv"
