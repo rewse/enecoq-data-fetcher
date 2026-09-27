@@ -1,13 +1,10 @@
 """Tests for data fetcher component."""
 
-from datetime import datetime
 from unittest.mock import Mock
 
 from playwright import sync_api
 
-from enecoq_data_fetcher import exceptions
-from enecoq_data_fetcher import fetcher
-from enecoq_data_fetcher import models
+from enecoq_data_fetcher import exceptions, fetcher
 
 
 def test_fetcher_initialization():
@@ -130,7 +127,7 @@ def test_extract_power_usage_various_formats():
     for text, expected in test_cases:
         mock_iframe = _create_mock_iframe_with_data(text, "0円", "0kg")
         result = data_fetcher._extract_value(mock_iframe, "使用量")
-        assert result == expected, "Failed for %s" % text
+        assert result == expected, f"Failed for {text}"
 
     print("✓ Extract power usage various formats test passed")
 
@@ -395,7 +392,7 @@ def test_get_enecoq_iframe_no_fallback_to_unrelated_frame():
         assert False, "Should have raised FetchError"
     except exceptions.FetchError as e:
         assert e.error_code == "IFRAME_NOT_FOUND", (
-            "Unexpected error code: %s" % e.error_code
+            f"Unexpected error code: {e.error_code}"
         )
 
     print("✓ Get enecoQ iframe no fallback to unrelated frame test passed")

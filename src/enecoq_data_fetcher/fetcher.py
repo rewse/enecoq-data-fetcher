@@ -2,12 +2,11 @@
 
 import datetime
 import re
+from typing import ClassVar
 
 from playwright import sync_api
 
-from enecoq_data_fetcher import exceptions
-from enecoq_data_fetcher import logger
-from enecoq_data_fetcher import models
+from enecoq_data_fetcher import exceptions, logger, models
 
 
 class EnecoQDataFetcher:
@@ -28,10 +27,10 @@ class EnecoQDataFetcher:
     DATA_UPDATE_WAIT_MS = 2000
 
     # Labels of the period options in the widget's dropdown
-    PERIOD_LABELS = {"today": "今日", "month": "今月"}
+    PERIOD_LABELS: ClassVar[dict[str, str]] = {"today": "今日", "month": "今月"}
 
     # English names for the alt text of each value's image, used in messages
-    VALUE_NAMES = {
+    VALUE_NAMES: ClassVar[dict[str, str]] = {
         "CO2": "CO2 emission",
         "使用料金": "power cost",
         "使用量": "power usage",
@@ -98,8 +97,8 @@ class EnecoQDataFetcher:
         except (exceptions.FetchError, sync_api.Error) as e:
             self._log.error("Failed to fetch %s's data: %s", period, e)
             raise exceptions.FetchError(
-                "Failed to fetch %s's data: %s" % (period, e),
-                "FETCH_%s_ERROR" % period.upper(),
+                f"Failed to fetch {period}'s data: {e}",
+                f"FETCH_{period.upper()}_ERROR",
             ) from e
         self._log.info("Successfully fetched %s data", period)
         return power_data
@@ -133,15 +132,15 @@ class EnecoQDataFetcher:
                 waited_ms += self.IFRAME_POLL_INTERVAL_MS
         except sync_api.Error as e:
             raise exceptions.FetchError(
-                "Failed to locate iframe: %s" % e, "IFRAME_ERROR"
+                f"Failed to locate iframe: {e}", "IFRAME_ERROR"
             ) from e
 
         # The widget is unavailable for a while after the month rollover.
         # Fail fast so the caller gets an accurate reason instead of a period
         # selection timeout on an unrelated iframe.
         raise exceptions.FetchError(
-            "enecoQ iframe not found: no iframe rendered %s within %sms"
-            % (self.DATA_MARKER_SELECTOR, self.IFRAME_TIMEOUT_MS),
+            "enecoQ iframe not found: no iframe rendered "
+            f"{self.DATA_MARKER_SELECTOR} within {self.IFRAME_TIMEOUT_MS}ms",
             "IFRAME_NOT_FOUND",
         )
 
@@ -157,13 +156,13 @@ class EnecoQDataFetcher:
         """
         label = self.PERIOD_LABELS.get(period)
         if label is None:
-            raise exceptions.FetchError("Invalid period: %s" % period, "INVALID_PERIOD")
+            raise exceptions.FetchError(f"Invalid period: {period}", "INVALID_PERIOD")
         self._log.debug("Selecting period: %s", period)
         try:
             iframe.locator("select").first.select_option(label=label)
         except sync_api.Error as e:
             raise exceptions.FetchError(
-                "Failed to select period: %s" % e, "PERIOD_SELECT_ERROR"
+                f"Failed to select period: {e}", "PERIOD_SELECT_ERROR"
             ) from e
 
     def _extract_value(self, iframe: sync_api.Frame, alt: str) -> float:
@@ -180,18 +179,18 @@ class EnecoQDataFetcher:
             FetchError: If the value is missing or is not a number.
         """
         name = self.VALUE_NAMES.get(alt, alt)
-        dt_locator = iframe.locator("dt:has(img[alt='%s'])" % alt)
+        dt_locator = iframe.locator(f"dt:has(img[alt='{alt}'])")
         dd_locator = dt_locator.locator("xpath=following-sibling::dd[1]")
         if dt_locator.count() == 0 or dd_locator.count() == 0:
             raise exceptions.FetchError(
-                "Value for %s not found" % name, "VALUE_NOT_FOUND"
+                f"Value for {name} not found", "VALUE_NOT_FOUND"
             )
 
         text = dd_locator.first.text_content() or ""
         match = self._NUMBER_PATTERN.search(text)
         if match is None:
             raise exceptions.FetchError(
-                "Could not parse %s from %r" % (name, text),
+                f"Could not parse {name} from {text!r}",
                 "VALUE_PARSE_ERROR",
             )
         value = float(match.group(0).replace(",", ""))
