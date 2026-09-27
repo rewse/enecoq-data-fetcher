@@ -116,7 +116,7 @@ def test_exception_catching():
     # Test catching all exceptions
     try:
         raise exceptions.ExportError("Test")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001  the test checks that a generic handler catches it
         assert isinstance(e, exceptions.EnecoQError)
 
     print("✓ Exception catching test passed")
