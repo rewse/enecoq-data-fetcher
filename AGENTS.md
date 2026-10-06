@@ -29,3 +29,7 @@ Report vulnerabilities in this project through a GitHub Security Advisory, not a
 ## Commits
 
 Include a body that explains what changed and why. Use the module name (`authenticator`, `cli`, `config`, `controller`, `exceptions`, `exporter`, `fetcher`, `logger`, `models`) as the Conventional Commits scope.
+
+## Validation
+
+Before pushing, run `uvx pre-commit run --all-files` and, after `uv sync --extra test`, `./tests/run_tests.sh`, and commit any files the hooks reformat. Stage new files first, because `--all-files` skips untracked files. CI runs the same hooks, and `core.hooksPath` points at git-defender, so `pre-commit install` cannot run them at commit time.
