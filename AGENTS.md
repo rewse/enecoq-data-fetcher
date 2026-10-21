@@ -22,7 +22,7 @@ Follow the Google Python Style Guide, including its rule to import modules rathe
 
 ## Dependencies and security
 
-Aikido Safe Chain cannot enforce a minimum package age for Python, so check it by hand: a new dependency or version must be at least 96 hours old, actively maintained, and free of known vulnerabilities. Before committing a dependency change, run `osv-scanner --lockfile=uv.lock` and the tests. Keep the Safe Chain and OSV-Scanner jobs in `.github/workflows/dependency-scan.yml` intact.
+Aikido Safe Chain cannot enforce a minimum package age for Python, so check it by hand: a new dependency or version must be at least 96 hours old, actively maintained, and free of known vulnerabilities. `[tool.uv] exclude-newer = "4 days"` in `pyproject.toml` applies the same cooldown to every uv resolution, including the unlocked `hatchling` build environment that `uv build` creates in `release.yml`; keep it. Every workflow that installs packages, `release.yml` included, sets up Safe Chain first. Before committing a dependency change, run `osv-scanner --lockfile=uv.lock` and the tests. Keep the Safe Chain and OSV-Scanner jobs in `.github/workflows/dependency-scan.yml` intact.
 
 Report vulnerabilities in this project through a GitHub Security Advisory, not a public issue.
 

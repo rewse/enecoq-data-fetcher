@@ -52,6 +52,16 @@ path = "src/enecoq_data_fetcher/__init__.py"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.uv]
+# Resolve only versions published at least 96 hours ago, including the
+# hatchling build backend that uv build installs into an isolated build
+# environment, which uv.lock does not pin.
+exclude-newer = "4 days"
+# Mirrors the exemption in the maintainer's user-level uv config, so uv.lock
+# records the same options with or without that config. It has no effect on
+# resolution, because the project never installs itself from PyPI.
+exclude-newer-package = { enecoq-data-fetcher = false }
+
 [tool.basedpyright]
 typeCheckingMode = "standard"
 venvPath = "."
