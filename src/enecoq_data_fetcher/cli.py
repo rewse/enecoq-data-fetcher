@@ -29,13 +29,20 @@ EXIT_INVALID_ARGUMENT = 6
 @click.version_option(version=__version__, prog_name="enecoq-data-fetcher")
 @click.option(
     "--email",
+    envvar="ENECOQ_EMAIL",
+    show_envvar=True,
     required=True,
     help="Email address for enecoQ authentication.",
 )
 @click.option(
     "--password",
+    envvar="ENECOQ_PASSWORD",
+    show_envvar=True,
     required=True,
-    help="Password for enecoQ authentication.",
+    help=(
+        "Password for enecoQ authentication. Prefer the environment variable,"
+        " because other local users can read command-line arguments."
+    ),
 )
 @click.option(
     "--period",
@@ -92,6 +99,10 @@ def main(
     enecoQ Web Service.
 
     Examples:
+
+        \b
+        # Read the credentials from ENECOQ_EMAIL and ENECOQ_PASSWORD
+        $ enecoq-data-fetcher --format console
 
         \b
         # Fetch this month's data and display in console

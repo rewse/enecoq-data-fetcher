@@ -55,8 +55,8 @@ uvx の場合は先頭を `uvx enecoq-data-fetcher` に置き換えてくださ�
 
 | 引数 | 説明 | デフォルト値 | 必須 |
 |------|------|--------------|------|
-| `--email` | CYBERHOME（enecoQ）のメールアドレス | - | ✓ |
-| `--password` | CYBERHOME（enecoQ）のパスワード | - | ✓ |
+| `--email` | CYBERHOME（enecoQ）のメールアドレス（環境変数 `ENECOQ_EMAIL`） | - | ✓ |
+| `--password` | CYBERHOME（enecoQ）のパスワード（環境変数 `ENECOQ_PASSWORD`） | - | ✓ |
 | `--period` | データ取得期間（`today` または `month`） | `month` | |
 | `--format` | 出力形式（`json` または `console`） | `json` | |
 | `--output` | JSON 出力先ファイルパス | - | |
@@ -70,6 +70,28 @@ enecoq-data-fetcher --email your@email.com --password yourpassword --period toda
 
 # 今月のデータを JSON ファイルに保存
 enecoq-data-fetcher --email your@email.com --password yourpassword --output data/power_data.json
+```
+
+### 環境変数で認証情報を渡す
+
+`--email` と `--password` の代わりに、環境変数 `ENECOQ_EMAIL` と `ENECOQ_PASSWORD` でも認証情報を渡せます。両方を指定した場合はコマンドライン引数が優先されます。
+
+`--password` に書いたパスワードは、同じマシンの他のユーザーがプロセス一覧（`ps` や `/proc/<pid>/cmdline`）から読めます。共有マシンや cron で使うときは、自分だけが読める（モード 0600 の）ファイルに環境変数を書き、そこから読み込んでください。
+
+```bash
+mkdir -p -m 700 ~/.config/enecoq
+install -m 600 /dev/null ~/.config/enecoq/env
+```
+
+作成した `~/.config/enecoq/env` をエディターで開き、次の 2 行を書きます。
+
+```bash
+export ENECOQ_EMAIL='your@email.com'
+export ENECOQ_PASSWORD='yourpassword'
+```
+
+```bash
+. ~/.config/enecoq/env && enecoq-data-fetcher --period today --format console
 ```
 
 ## 出力形式
@@ -132,7 +154,7 @@ max_retries: 3
 
 ### cron での定期実行
 
-毎時 42 分にデータを取得してファイルに保存する例です。多くの人が同じ時刻にアクセスすると enecoQ のサーバーに負荷がかかるので、42 は 1〜59 の好きな数字に変えてください。さらに 0〜59 秒のランダムな待機を入れています。`$RANDOM` は bash の機能なので、`SHELL=/bin/bash` を指定しています。
+毎時 42 分にデータを取得してファイルに保存する例です。多くの人が同じ時刻にアクセスすると enecoQ のサーバーに負荷がかかるので、42 は 1〜59 の好きな数字に変えてください。さらに 0〜59 秒のランダムな待機を入れています。`$RANDOM` は bash の機能なので、`SHELL=/bin/bash` を指定しています。認証情報は crontab に書かず、[環境変数で認証情報を渡す](#環境変数で認証情報を渡す)で作成したモード 0600 のファイルから読み込みます。
 
 ```bash
 crontab -e
@@ -140,7 +162,7 @@ crontab -e
 
 ```
 SHELL=/bin/bash
-42 * * * * sleep $((RANDOM \% 60)) && enecoq-data-fetcher --email your@email.com --password yourpassword --output /path/to/enecoq_data.json
+42 * * * * . "$HOME/.config/enecoq/env" && sleep $((RANDOM \% 60)) && enecoq-data-fetcher --output /path/to/enecoq_data.json
 ```
 
 ### Home Assistant

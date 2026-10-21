@@ -498,6 +498,57 @@ def test_cli_masks_password_in_error_output(mock_controller_class):
     print("✓ CLI masks password in error output")
 
 
+@patch("enecoq_data_fetcher.cli.controller.EnecoQController")
+def test_cli_reads_credentials_from_env(mock_controller_class):
+    """Test that ENECOQ_EMAIL and ENECOQ_PASSWORD supply the credentials."""
+    runner = CliRunner()
+    result = runner.invoke(
+        cli.main,
+        ["--format", "console"],
+        env={"ENECOQ_EMAIL": "env@example.com", "ENECOQ_PASSWORD": "env-secret"},
+    )
+
+    assert result.exit_code == 0, result.output
+    mock_controller_class.assert_called_once()
+    args = mock_controller_class.call_args.args
+    assert args[:2] == ("env@example.com", "env-secret"), args
+    print("✓ CLI reads credentials from environment variables")
+
+
+@patch("enecoq_data_fetcher.cli.controller.EnecoQController")
+def test_cli_options_override_env(mock_controller_class):
+    """Test that --email and --password take precedence over the environment."""
+    runner = CliRunner()
+    result = runner.invoke(
+        cli.main,
+        [
+            "--email",
+            "flag@example.com",
+            "--password",
+            "flag-secret",
+            "--format",
+            "console",
+        ],
+        env={"ENECOQ_EMAIL": "env@example.com", "ENECOQ_PASSWORD": "env-secret"},
+    )
+
+    assert result.exit_code == 0, result.output
+    args = mock_controller_class.call_args.args
+    assert args[:2] == ("flag@example.com", "flag-secret"), args
+    print("✓ CLI options override environment variables")
+
+
+def test_cli_help_mentions_env_vars():
+    """Test that --help documents the credential environment variables."""
+    runner = CliRunner()
+    result = runner.invoke(cli.main, ["--help"], terminal_width=200)
+
+    assert result.exit_code == 0
+    assert "ENECOQ_EMAIL" in result.output, result.output
+    assert "ENECOQ_PASSWORD" in result.output, result.output
+    print("✓ CLI help mentions credential environment variables")
+
+
 if __name__ == "__main__":
     test_cli_help()
     test_cli_missing_required_args()
@@ -519,4 +570,7 @@ if __name__ == "__main__":
     test_cli_masks_password_in_log_file()
     test_cli_reports_argument_error_once()
     test_cli_masks_password_in_error_output()
+    test_cli_reads_credentials_from_env()
+    test_cli_options_override_env()
+    test_cli_help_mentions_env_vars()
     print("\nAll CLI tests passed!")
