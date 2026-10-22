@@ -33,7 +33,7 @@ jobs:
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
 
       - name: Setup Aikido Safe Chain
-        uses: rewse/actions/setup-safe-chain@0adf8f4c7fff77793a917e1f063d2e5094a6b6d0  # v1.1.2
+        uses: rewse/actions/setup-safe-chain@b74841cd9d858e4ce5da13517ad583f296039738  # v1.1.4
 
       - name: Install dependencies with Aikido Safe Chain
         run: uv sync --safe-chain-skip-minimum-package-age
@@ -45,7 +45,7 @@ jobs:
       actions: read
       contents: read
       security-events: write
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc  # v2.6.0
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@b1d267aea5211fa648d9d442fa64b90dbdcbdd36  # v2.7.0
 
   # Fails only on vulnerabilities the PR introduces, so a PR is not blocked
   # by ones already on main.
@@ -56,4 +56,4 @@ jobs:
       actions: read
       contents: read
       security-events: write
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc  # v2.6.0
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@b1d267aea5211fa648d9d442fa64b90dbdcbdd36  # v2.7.0
