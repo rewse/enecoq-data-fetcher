@@ -43,11 +43,17 @@ class EnecoQAuthenticator:
         Raises:
             AuthenticationError: If the login form is missing or the
                 credentials are rejected. These are not retried.
+            FetchError: If the login page returns an HTTP error, such as 503
+                while CYBERHOME is down. The controller retries these.
             playwright.sync_api.Error: If the browser fails, including
                 timeouts. The controller retries these.
         """
         self._log.debug("Navigating to login page: %s", self.LOGIN_URL)
-        page.goto(self.LOGIN_URL, wait_until="networkidle")
+        response = page.goto(self.LOGIN_URL, wait_until="networkidle")
+        if response is not None and not response.ok:
+            raise exceptions.FetchError(
+                f"Login page returned HTTP {response.status}", "HTTP_ERROR"
+            )
 
         email_input = page.locator(self.EMAIL_SELECTOR)
         if not email_input.is_visible():

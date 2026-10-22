@@ -79,6 +79,28 @@ def test_login_form_not_found():
     print("✓ Login form not found test passed")
 
 
+def test_login_page_server_error():
+    """Test login when the login page returns a server error."""
+    auth = authenticator.EnecoQAuthenticator(
+        email="test@example.com", password="test123"
+    )
+
+    # Create mock page whose navigation returns HTTP 503
+    mock_page = Mock()
+    mock_page.goto.return_value = Mock(ok=False, status=503)
+
+    # Execute login and expect a retryable error
+    try:
+        auth.login(mock_page)
+        assert False, "Should have raised FetchError"
+    except exceptions.FetchError as e:
+        assert e.error_code == "HTTP_ERROR"
+        assert "503" in str(e)
+
+    mock_page.locator.assert_not_called()
+    print("✓ Login page server error test passed")
+
+
 def test_login_authentication_failed():
     """Test login when authentication fails."""
     auth = authenticator.EnecoQAuthenticator(email="test@example.com", password="wrong")
@@ -295,6 +317,7 @@ if __name__ == "__main__":
     test_authenticator_initialization()
     test_login_success()
     test_login_form_not_found()
+    test_login_page_server_error()
     test_login_authentication_failed()
     test_login_with_error_message()
     test_login_unexpected_error()
