@@ -17,8 +17,10 @@ enecoQ から電力使用量、電力使用料金、CO2 排出量を取得する
 
 ```bash
 uvx --from enecoq-data-fetcher playwright install chromium
-uvx enecoq-data-fetcher --email your@email.com --password yourpassword
+. ~/.config/enecoq/env && uvx enecoq-data-fetcher
 ```
+
+`~/.config/enecoq/env` の作り方は[環境変数で認証情報を渡す](#環境変数で認証情報を渡す)を参照してください。
 
 ### uv tool
 
@@ -47,16 +49,18 @@ playwright install chromium
 
 ## 使用方法
 
+認証情報は環境変数 `ENECOQ_EMAIL` と `ENECOQ_PASSWORD` で渡します。[環境変数で認証情報を渡す](#環境変数で認証情報を渡す)で作成するファイルを読み込んでから実行してください。
+
 ```bash
-enecoq-data-fetcher --email your@email.com --password yourpassword
+. ~/.config/enecoq/env && enecoq-data-fetcher
 ```
 
-uvx の場合は先頭を `uvx enecoq-data-fetcher` に置き換えてください。
+uvx の場合は `enecoq-data-fetcher` を `uvx enecoq-data-fetcher` に置き換えてください。
 
 | 引数 | 説明 | デフォルト値 | 必須 |
 |------|------|--------------|------|
 | `--email` | CYBERHOME（enecoQ）のメールアドレス（環境変数 `ENECOQ_EMAIL`） | - | ✓ |
-| `--password` | CYBERHOME（enecoQ）のパスワード（環境変数 `ENECOQ_PASSWORD`） | - | ✓ |
+| `--password` | CYBERHOME（enecoQ）のパスワード（環境変数 `ENECOQ_PASSWORD`）。引数での指定は非推奨（[コマンドライン引数で認証情報を渡す](#コマンドライン引数で認証情報を渡す)） | - | ✓ |
 | `--period` | データ取得期間（`today` または `month`） | `month` | |
 | `--format` | 出力形式（`json` または `console`） | `json` | |
 | `--output` | JSON 出力先ファイルパス | - | |
@@ -65,18 +69,19 @@ uvx の場合は先頭を `uvx enecoq-data-fetcher` に置き換えてくださ�
 | `--log-file` | ログファイルパス | - | |
 
 ```bash
+# 認証情報の環境変数を読み込む
+. ~/.config/enecoq/env
+
 # 今日のデータをコンソールに表示
-enecoq-data-fetcher --email your@email.com --password yourpassword --period today --format console
+enecoq-data-fetcher --period today --format console
 
 # 今月のデータを JSON ファイルに保存
-enecoq-data-fetcher --email your@email.com --password yourpassword --output data/power_data.json
+enecoq-data-fetcher --output data/power_data.json
 ```
 
 ### 環境変数で認証情報を渡す
 
-`--email` と `--password` の代わりに、環境変数 `ENECOQ_EMAIL` と `ENECOQ_PASSWORD` でも認証情報を渡せます。両方を指定した場合はコマンドライン引数が優先されます。
-
-`--password` に書いたパスワードは、同じマシンの他のユーザーがプロセス一覧（`ps` や `/proc/<pid>/cmdline`）から読めます。共有マシンや cron で使うときは、自分だけが読める（モード 0600 の）ファイルに環境変数を書き、そこから読み込んでください。
+環境変数 `ENECOQ_EMAIL` と `ENECOQ_PASSWORD` は、自分だけが読める（モード 0600 の）ファイルに書いておき、実行前に読み込みます。
 
 ```bash
 mkdir -p -m 700 ~/.config/enecoq
@@ -93,6 +98,16 @@ export ENECOQ_PASSWORD='yourpassword'
 ```bash
 . ~/.config/enecoq/env && enecoq-data-fetcher --period today --format console
 ```
+
+### コマンドライン引数で認証情報を渡す
+
+環境変数の代わりに `--email` と `--password` でも認証情報を渡せます。両方を指定した場合はコマンドライン引数が優先されます。
+
+```bash
+enecoq-data-fetcher --email your@email.com --password yourpassword
+```
+
+この方法は推奨しません。`--password` に書いたパスワードは、同じマシンの他のユーザーがプロセス一覧（`ps` や `/proc/<pid>/cmdline`）から読めるうえ、シェルの履歴にも残ります。
 
 ## 出力形式
 
@@ -132,7 +147,7 @@ CO2 Emission: 125.25 kg
 ログは標準ではコンソールにだけ出力されます。`--log-file` を指定すると、DEBUG レベル以上のログがそのファイルにも記録されます。認証情報はどちらにも記録されません。
 
 ```bash
-enecoq-data-fetcher --email your@email.com --password yourpassword --log-file logs/enecoq.log
+. ~/.config/enecoq/env && enecoq-data-fetcher --log-file logs/enecoq.log
 ```
 
 ## 設定ファイル
