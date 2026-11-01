@@ -549,6 +549,21 @@ def test_cli_help_mentions_env_vars():
     print("✓ CLI help mentions credential environment variables")
 
 
+def test_cli_help_examples_omit_password_option():
+    """Test that the --help examples pass the password through the environment."""
+    runner = CliRunner()
+    result = runner.invoke(cli.main, ["--help"], terminal_width=200)
+
+    assert result.exit_code == 0
+    examples = [
+        line for line in result.output.splitlines() if "$ enecoq-data-fetcher" in line
+    ]
+    assert examples, result.output
+    for example in examples:
+        assert "--password" not in example, example
+    print("✓ CLI help examples omit --password")
+
+
 if __name__ == "__main__":
     test_cli_help()
     test_cli_missing_required_args()
@@ -573,4 +588,5 @@ if __name__ == "__main__":
     test_cli_reads_credentials_from_env()
     test_cli_options_override_env()
     test_cli_help_mentions_env_vars()
+    test_cli_help_examples_omit_password_option()
     print("\nAll CLI tests passed!")

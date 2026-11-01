@@ -98,27 +98,25 @@ def main(
     This tool retrieves power usage, cost, and CO2 emission data from the
     enecoQ Web Service.
 
+    The examples read the credentials from ENECOQ_EMAIL and ENECOQ_PASSWORD.
+
     Examples:
 
         \b
-        # Read the credentials from ENECOQ_EMAIL and ENECOQ_PASSWORD
+        # Fetch this month's data and display in console
         $ enecoq-data-fetcher --format console
 
         \b
-        # Fetch this month's data and display in console
-        $ enecoq-data-fetcher --email user@example.com --password secret --format console
-
-        \b
         # Fetch today's data and save to JSON file
-        $ enecoq-data-fetcher --email user@example.com --password secret --period today --output data.json
+        $ enecoq-data-fetcher --period today --output data.json
 
         \b
         # Fetch with debug logging
-        $ enecoq-data-fetcher --email user@example.com --password secret --log-level DEBUG
+        $ enecoq-data-fetcher --log-level DEBUG
 
         \b
         # Use custom config file
-        $ enecoq-data-fetcher --email user@example.com --password secret --config /path/to/config.yaml
+        $ enecoq-data-fetcher --config /path/to/config.yaml
     """
     log = None
     secrets = [password]
