@@ -186,6 +186,69 @@ def test_login_with_error_message():
     print("✓ Login with error message test passed")
 
 
+def _mock_rejected_login_page(mock_error_element):
+    """Create a mock page whose login is rejected.
+
+    Args:
+        mock_error_element: Mock returned for the error message selector.
+
+    Returns:
+        Mock page that shows the login form and no logout link.
+    """
+    mock_page = Mock()
+    mock_email_input = Mock()
+    mock_email_input.is_visible.return_value = True
+    mock_logout_link = Mock()
+    mock_logout_link.count.return_value = 0  # Not logged in
+
+    mock_page.locator.side_effect = lambda selector: {
+        'input[name="user_id"]': mock_email_input,
+        'a:has-text("ログアウト")': mock_logout_link,
+        '.error, .alert, [class*="error"]': mock_error_element,
+    }.get(selector, Mock())
+    return mock_page
+
+
+def test_login_rejected_when_error_text_read_fails():
+    """Test that a rejected login is an AuthenticationError without its text."""
+    auth = authenticator.EnecoQAuthenticator(email="test@example.com", password="wrong")
+
+    # The error element disappears between count() and text_content()
+    mock_error_element = Mock()
+    mock_error_element.count.return_value = 1
+    mock_error_element.first.text_content.side_effect = sync_api.TimeoutError(
+        "Timeout 30000ms exceeded"
+    )
+    mock_page = _mock_rejected_login_page(mock_error_element)
+
+    # A browser error here must not reach the controller, which would retry
+    # the rejected credentials
+    try:
+        auth.login(mock_page)
+        assert False, "Should have raised AuthenticationError"
+    except exceptions.AuthenticationError as e:
+        assert e.message == "Authentication failed"
+
+    print("✓ Login rejected when error text read fails test passed")
+
+
+def test_login_rejected_when_error_count_fails():
+    """Test that a rejected login is an AuthenticationError without its count."""
+    auth = authenticator.EnecoQAuthenticator(email="test@example.com", password="wrong")
+
+    mock_error_element = Mock()
+    mock_error_element.count.side_effect = sync_api.Error("Page closed")
+    mock_page = _mock_rejected_login_page(mock_error_element)
+
+    try:
+        auth.login(mock_page)
+        assert False, "Should have raised AuthenticationError"
+    except exceptions.AuthenticationError as e:
+        assert e.message == "Authentication failed"
+
+    print("✓ Login rejected when error count fails test passed")
+
+
 def test_login_unexpected_error():
     """Test login with unexpected error."""
     auth = authenticator.EnecoQAuthenticator(
@@ -320,6 +383,8 @@ if __name__ == "__main__":
     test_login_page_server_error()
     test_login_authentication_failed()
     test_login_with_error_message()
+    test_login_rejected_when_error_text_read_fails()
+    test_login_rejected_when_error_count_fails()
     test_login_unexpected_error()
     test_login_timeout_propagates()
     test_is_logged_in_true()
