@@ -93,11 +93,21 @@ class EnecoQAuthenticator:
             page: Playwright page showing the login result.
 
         Returns:
-            Error message, including the page's error text if there is one.
+            Error message, including the page's error text if it can be read.
         """
-        error_elements = page.locator(self.ERROR_MESSAGE_SELECTOR)
-        if error_elements.count() > 0:
-            error_text = error_elements.first.text_content()
-            if error_text:
-                return f"Authentication failed: {error_text.strip()}"
+        # The login is already known to be rejected, so a browser error while
+        # reading the text must not propagate: the controller would retry it
+        # and resubmit the rejected credentials.
+        try:
+            error_elements = page.locator(self.ERROR_MESSAGE_SELECTOR)
+            error_text = (
+                error_elements.first.text_content()
+                if error_elements.count() > 0
+                else None
+            )
+        except sync_api.Error as e:
+            self._log.debug("Could not read login error message: %s", e)
+            error_text = None
+        if error_text:
+            return f"Authentication failed: {error_text.strip()}"
         return "Authentication failed"
