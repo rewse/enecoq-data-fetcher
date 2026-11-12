@@ -36,7 +36,7 @@ jobs:
           enable-cache: false
 
       - name: Setup Aikido Safe Chain
-        uses: rewse/actions/setup-safe-chain@90d01bd07cb0cb6f5fb1dcb89a01b3165bb50c2b  # v1.1.8
+        uses: rewse/actions/setup-safe-chain@f336e87609e41dacccd0831db7f49a785e827d40  # v1.1.9
 
       # The 96-hour cooldown for the isolated build environment comes from
       # [tool.uv] exclude-newer in pyproject.toml.
