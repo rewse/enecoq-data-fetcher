@@ -249,6 +249,34 @@ def test_login_rejected_when_error_count_fails():
     print("✓ Login rejected when error count fails test passed")
 
 
+def test_login_error_text_control_characters_escaped():
+    """Test that control characters in the page's error text are escaped."""
+    auth = authenticator.EnecoQAuthenticator(email="test@example.com", password="wrong")
+
+    mock_error_element = Mock()
+    mock_error_element.count.return_value = 1
+    mock_error_element.first.text_content.return_value = (
+        " Invalid\n2026-01-01 00:00:00 - enecoq - INFO - ok\x1b[2J\r "
+    )
+    mock_page = _mock_rejected_login_page(mock_error_element)
+
+    # The text comes from the remote page and reaches the log file and the
+    # terminal, so it must not be able to start a new line or send escapes
+    try:
+        auth.login(mock_page)
+        assert False, "Should have raised AuthenticationError"
+    except exceptions.AuthenticationError as e:
+        assert "\n" not in e.message
+        assert "\r" not in e.message
+        assert "\x1b" not in e.message
+        assert e.message == (
+            "Authentication failed: "
+            "'Invalid\\n2026-01-01 00:00:00 - enecoq - INFO - ok\\x1b[2J'"
+        )
+
+    print("✓ Login error text control characters escaped test passed")
+
+
 def test_login_unexpected_error():
     """Test login with unexpected error."""
     auth = authenticator.EnecoQAuthenticator(
@@ -385,6 +413,7 @@ if __name__ == "__main__":
     test_login_with_error_message()
     test_login_rejected_when_error_text_read_fails()
     test_login_rejected_when_error_count_fails()
+    test_login_error_text_control_characters_escaped()
     test_login_unexpected_error()
     test_login_timeout_propagates()
     test_is_logged_in_true()
