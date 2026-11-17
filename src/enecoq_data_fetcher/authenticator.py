@@ -109,5 +109,8 @@ class EnecoQAuthenticator:
             self._log.debug("Could not read login error message: %s", e)
             error_text = None
         if error_text:
-            return f"Authentication failed: {error_text.strip()}"
+            # The text comes from the remote page and ends up in the log file
+            # and on the terminal, so repr() escapes newlines and other
+            # control characters.
+            return f"Authentication failed: {error_text.strip()!r}"
         return "Authentication failed"
