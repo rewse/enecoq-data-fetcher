@@ -1,0 +1,4 @@
+# Build backend that uv build installs into its isolated build environment.
+# Keep it in sync with [build-system] requires in pyproject.toml, then
+# regenerate build-requirements.txt with the command in its header.
+hatchling
