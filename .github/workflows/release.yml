@@ -33,7 +33,7 @@ jobs:
           enable-cache: false
 
       - name: Setup Aikido Safe Chain
-        uses: rewse/actions/setup-safe-chain@f336e87609e41dacccd0831db7f49a785e827d40  # v1.1.9
+        uses: rewse/actions/setup-safe-chain@b06697c94c0963f81fe1d00c0414548c76f93330  # v1.1.13
 
       # uv.lock does not cover the isolated build environment, so
       # build-requirements.txt pins the build backend and its dependencies
