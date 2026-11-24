@@ -38,4 +38,8 @@ jobs:
         env:
           # zizmor runs its online audits, such as impostor-commit, with a token.
           GH_TOKEN: ${{ github.token }}
+          # uvx ignores [tool.uv] in pyproject.toml, so without this it resolves
+          # releases younger than Safe Chain's 96-hour minimum package age and
+          # Safe Chain blocks their download.
+          UV_EXCLUDE_NEWER: 4 days
         run: uvx --with pre-commit-uv==4.3.0 pre-commit@4.6.2 run --all-files --show-diff-on-failure
